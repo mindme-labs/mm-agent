@@ -69,6 +69,13 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    'uploaded-files': UploadedFile;
+    recommendations: Recommendation;
+    'recommendation-feedback': RecommendationFeedback;
+    'analysis-results': AnalysisResult;
+    'ai-prompts': AiPrompt;
+    'ai-usage-logs': AiUsageLog;
+    'event-log': EventLog;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,6 +85,13 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    'uploaded-files': UploadedFilesSelect<false> | UploadedFilesSelect<true>;
+    recommendations: RecommendationsSelect<false> | RecommendationsSelect<true>;
+    'recommendation-feedback': RecommendationFeedbackSelect<false> | RecommendationFeedbackSelect<true>;
+    'analysis-results': AnalysisResultsSelect<false> | AnalysisResultsSelect<true>;
+    'ai-prompts': AiPromptsSelect<false> | AiPromptsSelect<true>;
+    'ai-usage-logs': AiUsageLogsSelect<false> | AiUsageLogsSelect<true>;
+    'event-log': EventLogSelect<false> | EventLogSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -87,8 +101,12 @@ export interface Config {
     defaultIDType: string;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'global-settings': GlobalSetting;
+  };
+  globalsSelect: {
+    'global-settings': GlobalSettingsSelect<false> | GlobalSettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -123,6 +141,13 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: string;
+  name?: string | null;
+  role: 'admin' | 'ceo';
+  mode: 'demo' | 'preprod' | 'production';
+  hasCompletedOnboarding?: boolean | null;
+  companyName?: string | null;
+  inn?: string | null;
+  companyType?: ('ip' | 'ooo') | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -163,6 +188,192 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "uploaded-files".
+ */
+export interface UploadedFile {
+  id: string;
+  owner: string | User;
+  originalName?: string | null;
+  detectedType?: string | null;
+  accountCode?: string | null;
+  period?: string | null;
+  parseStatus?: ('pending' | 'recognizing' | 'parsing' | 'success' | 'warning' | 'error') | null;
+  parseErrors?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  parsedData?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  aiRecognitionLog?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recommendations".
+ */
+export interface Recommendation {
+  id: string;
+  owner: string | User;
+  ruleCode: string;
+  ruleName: string;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  shortRecommendation?: string | null;
+  fullText?: string | null;
+  status: 'new' | 'in_progress' | 'resolved' | 'stuck' | 'dismissed';
+  impactMetric?: ('accounts_receivable' | 'accounts_payable' | 'inventory' | 'revenue' | 'strategic') | null;
+  impactDirection?: ('decrease' | 'increase') | null;
+  impactAmount?: number | null;
+  sourceAccount?: string | null;
+  counterparty?: string | null;
+  recipient: string;
+  isDemo?: boolean | null;
+  isAiGenerated?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recommendation-feedback".
+ */
+export interface RecommendationFeedback {
+  id: string;
+  owner: string | User;
+  recommendation: string | Recommendation;
+  rating: 'positive' | 'negative';
+  comment?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "analysis-results".
+ */
+export interface AnalysisResult {
+  id: string;
+  owner: string | User;
+  period: string;
+  revenue?: number | null;
+  cogs?: number | null;
+  grossProfit?: number | null;
+  grossMargin?: number | null;
+  accountsReceivable?: number | null;
+  accountsPayable?: number | null;
+  inventory?: number | null;
+  shippedGoods?: number | null;
+  arTurnoverDays?: number | null;
+  apTurnoverDays?: number | null;
+  inventoryTurnoverDays?: number | null;
+  healthIndex?: ('fine' | 'issues' | 'risky') | null;
+  topDebtors?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  topCreditors?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  aiAuditSummary?: string | null;
+  isDemo?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-prompts".
+ */
+export interface AiPrompt {
+  id: string;
+  promptKey: string;
+  name: string;
+  systemPrompt: string;
+  userPromptTemplate?: string | null;
+  version?: number | null;
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-usage-logs".
+ */
+export interface AiUsageLog {
+  id: string;
+  owner: string | User;
+  promptKey: string;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+  model?: string | null;
+  cost?: number | null;
+  durationMs?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-log".
+ */
+export interface EventLog {
+  id: string;
+  owner?: (string | null) | User;
+  eventType: string;
+  entityType?: string | null;
+  entityId?: string | null;
+  payload?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -192,6 +403,34 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: string | Media;
+      } | null)
+    | ({
+        relationTo: 'uploaded-files';
+        value: string | UploadedFile;
+      } | null)
+    | ({
+        relationTo: 'recommendations';
+        value: string | Recommendation;
+      } | null)
+    | ({
+        relationTo: 'recommendation-feedback';
+        value: string | RecommendationFeedback;
+      } | null)
+    | ({
+        relationTo: 'analysis-results';
+        value: string | AnalysisResult;
+      } | null)
+    | ({
+        relationTo: 'ai-prompts';
+        value: string | AiPrompt;
+      } | null)
+    | ({
+        relationTo: 'ai-usage-logs';
+        value: string | AiUsageLog;
+      } | null)
+    | ({
+        relationTo: 'event-log';
+        value: string | EventLog;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -240,6 +479,13 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  name?: T;
+  role?: T;
+  mode?: T;
+  hasCompletedOnboarding?: T;
+  companyName?: T;
+  inn?: T;
+  companyType?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -274,6 +520,137 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "uploaded-files_select".
+ */
+export interface UploadedFilesSelect<T extends boolean = true> {
+  owner?: T;
+  originalName?: T;
+  detectedType?: T;
+  accountCode?: T;
+  period?: T;
+  parseStatus?: T;
+  parseErrors?: T;
+  parsedData?: T;
+  aiRecognitionLog?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recommendations_select".
+ */
+export interface RecommendationsSelect<T extends boolean = true> {
+  owner?: T;
+  ruleCode?: T;
+  ruleName?: T;
+  priority?: T;
+  title?: T;
+  description?: T;
+  shortRecommendation?: T;
+  fullText?: T;
+  status?: T;
+  impactMetric?: T;
+  impactDirection?: T;
+  impactAmount?: T;
+  sourceAccount?: T;
+  counterparty?: T;
+  recipient?: T;
+  isDemo?: T;
+  isAiGenerated?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recommendation-feedback_select".
+ */
+export interface RecommendationFeedbackSelect<T extends boolean = true> {
+  owner?: T;
+  recommendation?: T;
+  rating?: T;
+  comment?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "analysis-results_select".
+ */
+export interface AnalysisResultsSelect<T extends boolean = true> {
+  owner?: T;
+  period?: T;
+  revenue?: T;
+  cogs?: T;
+  grossProfit?: T;
+  grossMargin?: T;
+  accountsReceivable?: T;
+  accountsPayable?: T;
+  inventory?: T;
+  shippedGoods?: T;
+  arTurnoverDays?: T;
+  apTurnoverDays?: T;
+  inventoryTurnoverDays?: T;
+  healthIndex?: T;
+  topDebtors?: T;
+  topCreditors?: T;
+  aiAuditSummary?: T;
+  isDemo?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-prompts_select".
+ */
+export interface AiPromptsSelect<T extends boolean = true> {
+  promptKey?: T;
+  name?: T;
+  systemPrompt?: T;
+  userPromptTemplate?: T;
+  version?: T;
+  isActive?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-usage-logs_select".
+ */
+export interface AiUsageLogsSelect<T extends boolean = true> {
+  owner?: T;
+  promptKey?: T;
+  inputTokens?: T;
+  outputTokens?: T;
+  model?: T;
+  cost?: T;
+  durationMs?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-log_select".
+ */
+export interface EventLogSelect<T extends boolean = true> {
+  owner?: T;
+  eventType?: T;
+  entityType?: T;
+  entityId?: T;
+  payload?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -314,6 +691,44 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "global-settings".
+ */
+export interface GlobalSetting {
+  id: string;
+  allowedEmails?:
+    | {
+        email: string;
+        id?: string | null;
+      }[]
+    | null;
+  defaultMode?: ('demo' | 'preprod') | null;
+  aiEnabled?: boolean | null;
+  aiProvider?: ('anthropic' | 'openai') | null;
+  aiModel?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "global-settings_select".
+ */
+export interface GlobalSettingsSelect<T extends boolean = true> {
+  allowedEmails?:
+    | T
+    | {
+        email?: T;
+        id?: T;
+      };
+  defaultMode?: T;
+  aiEnabled?: T;
+  aiProvider?: T;
+  aiModel?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
