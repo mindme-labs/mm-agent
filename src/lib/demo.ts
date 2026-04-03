@@ -68,20 +68,8 @@ export async function seedDemoForUser(userId: string): Promise<number> {
     })
   }
 
-  for (const file of data) {
-    await payload.create({
-      collection: 'uploaded-files',
-      data: {
-        owner: userId,
-        originalName: `ОСВ по счёту ${file.accountCode} за ${file.period}`,
-        detectedType: 'ОСВ',
-        accountCode: file.accountCode,
-        period: file.period,
-        parseStatus: 'success',
-        parsedData: file as unknown as Record<string, unknown>,
-      },
-    })
-  }
+  // Demo mode: store parsed file metadata in analysis results instead of
+  // creating upload records (which require actual file uploads).
 
   return recommendations.length
 }
@@ -97,11 +85,6 @@ export async function clearDemoForUser(userId: string): Promise<void> {
   await payload.delete({
     collection: 'analysis-results',
     where: { owner: { equals: userId }, isDemo: { equals: true } },
-  })
-
-  await payload.delete({
-    collection: 'uploaded-files',
-    where: { owner: { equals: userId } },
   })
 
   await payload.delete({
