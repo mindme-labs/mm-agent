@@ -1,6 +1,10 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
-import { headers } from 'next/headers'
+import { getPayload } from 'payload'
+import config from '@payload-config'
+import { Sidebar } from '@/components/Sidebar'
+import { AppHeader } from '@/components/AppHeader'
+import { BottomNav } from '@/components/BottomNav'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
@@ -9,16 +13,41 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect('/auth')
   }
 
-  const headersList = await headers()
-  const pathname = headersList.get('x-next-pathname') || ''
-
-  if (!user.hasCompletedOnboarding && !pathname.includes('/onboarding')) {
-    redirect('/app/onboarding')
+  let newCount = 0
+  if (user.hasCompletedOnboarding) {
+    try {
+      const payload = await getPayload({ config })
+      const result = await payload.count({
+        collection: 'recommendations',
+        where: {
+          owner: { equals: user.id },
+          status: { equals: 'new' },
+        },
+      })
+      newCount = result.totalDocs
+    } catch {
+      // non-critical
+    }
   }
 
-  if (user.hasCompletedOnboarding && pathname.includes('/onboarding')) {
-    redirect('/app/inbox')
+  const isOnboarding = !user.hasCompletedOnboarding
+
+  if (isOnboarding) {
+    return (
+      <div className="min-h-dvh bg-slate-50">
+        {children}
+      </div>
+    )
   }
 
-  return <>{children}</>
+  return (
+    <div className="min-h-dvh bg-slate-50">
+      <Sidebar userName={user.name || user.email} newCount={newCount} />
+      <AppHeader userName={user.name || user.email} />
+      <main className="w-full px-4 pb-20 pt-4 md:max-w-2xl md:mx-auto lg:ml-64 lg:max-w-none lg:mx-0 lg:pb-4 lg:pr-4">
+        {children}
+      </main>
+      <BottomNav newCount={newCount} />
+    </div>
+  )
 }
