@@ -21,7 +21,7 @@ export function Sidebar({ userName, newCount = 0 }: SidebarProps) {
   return (
     <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-slate-200 lg:bg-white">
       <div className="flex h-16 items-center border-b border-slate-200 px-6">
-        <span className="text-lg font-bold text-indigo-600">AI-Advisor</span>
+        <span className="text-lg font-bold text-indigo-600">MMLabs</span>
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 p-4">

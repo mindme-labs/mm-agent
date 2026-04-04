@@ -8,7 +8,7 @@ const inter = Inter({
 })
 
 export const metadata = {
-  title: 'AI-Advisor — Управление оборотным капиталом',
+  title: 'MMLabs — Управление оборотным капиталом',
   description: 'Проактивный AI-агент для управления оборотным капиталом оптовых компаний',
 }
 

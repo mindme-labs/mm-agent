@@ -10,7 +10,7 @@ export function AppHeader({ userName }: AppHeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-sm lg:hidden">
       <div className="flex h-14 items-center justify-between px-4">
-        <span className="text-lg font-bold text-indigo-600">AI-Advisor</span>
+        <span className="text-lg font-bold text-indigo-600">MMLabs</span>
         <div className="flex items-center gap-3">
           <span className="max-w-[140px] truncate text-sm text-slate-600">
             {userName || 'Пользователь'}

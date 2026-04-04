@@ -20,7 +20,7 @@ function AuthContent() {
       <div className="w-full max-w-sm">
         <div className="rounded-xl bg-white p-8 shadow-sm">
           <div className="mb-6 text-center">
-            <div className="mb-2 text-2xl font-bold text-indigo-600">AI-Advisor</div>
+            <div className="mb-2 text-2xl font-bold text-indigo-600">MMLabs</div>
             <h1 className="text-lg font-semibold text-slate-900">
               Управление оборотным капиталом
             </h1>

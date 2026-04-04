@@ -44,9 +44,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-dvh bg-slate-50">
       <Sidebar userName={user.name || user.email} newCount={newCount} />
       <AppHeader userName={user.name || user.email} />
-      <main className="w-full px-4 pb-20 pt-4 md:max-w-2xl md:mx-auto lg:ml-64 lg:max-w-none lg:mx-0 lg:pb-4 lg:pr-4">
-        {children}
-      </main>
+      <div className="lg:pl-64">
+        <main className="mx-auto max-w-5xl px-4 pb-20 pt-4 lg:px-8 lg:pb-6">
+          {children}
+        </main>
+      </div>
       <BottomNav newCount={newCount} />
     </div>
   )

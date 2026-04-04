@@ -6,6 +6,7 @@ import { FileSpreadsheet, Check, Loader2, ArrowRight, Sparkles } from 'lucide-re
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { CsvPreviewDialog } from './CsvPreviewDialog'
 
 const DEMO_FILES = [
   { code: '10', name: 'Материалы' },
@@ -32,6 +33,7 @@ export function OnboardingWizard() {
   const [recommendationCount, setRecommendationCount] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [seeding, setSeeding] = useState(false)
+  const [previewFile, setPreviewFile] = useState<{ code: string; name: string } | null>(null)
 
   const runAnalysis = useCallback(async () => {
     if (seeding) return
@@ -80,14 +82,14 @@ export function OnboardingWizard() {
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-slate-50 px-4">
-      <Card className="w-full max-w-lg p-6 md:p-8">
+      <Card className="w-full max-w-lg p-6 md:max-w-2xl md:p-8 lg:max-w-3xl lg:p-10">
         {step === 0 && (
           <div className="text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100">
               <Sparkles className="h-8 w-8 text-indigo-600" />
             </div>
             <h1 className="mb-2 text-xl font-bold text-slate-900">
-              Добро пожаловать в AI-Advisor
+              Добро пожаловать в MMLabs
             </h1>
             <p className="mb-6 text-sm text-slate-600">
               Сейчас мы покажем, как сервис находит проблемы в ваших финансах
@@ -112,23 +114,33 @@ export function OnboardingWizard() {
             <p className="mb-4 text-sm text-slate-500">
               Загружены ОСВ из 1С:Бухгалтерии за 2025 г.
             </p>
-            <div className="mb-6 space-y-2">
+            <div className="mb-6 grid grid-cols-1 gap-2 md:grid-cols-2">
               {DEMO_FILES.map((file) => (
-                <div
+                <button
                   key={file.code}
-                  className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2.5"
+                  onClick={() => setPreviewFile({ code: file.code, name: file.name })}
+                  className="flex w-full items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 text-left transition-colors hover:border-indigo-300 hover:bg-indigo-50/50"
                 >
                   <FileSpreadsheet className="h-5 w-5 shrink-0 text-green-600" />
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium text-slate-700">
                       Счёт {file.code}
                     </div>
-                    <div className="text-xs text-slate-500">{file.name}</div>
+                    <div className="truncate text-xs text-slate-500">{file.name}</div>
                   </div>
-                  <Check className="h-4 w-4 text-green-600" />
-                </div>
+                  <span className="shrink-0 text-xs text-indigo-500">Просмотреть</span>
+                </button>
               ))}
             </div>
+
+            {previewFile && (
+              <CsvPreviewDialog
+                accountCode={previewFile.code}
+                accountName={previewFile.name}
+                open={!!previewFile}
+                onOpenChange={(open) => { if (!open) setPreviewFile(null) }}
+              />
+            )}
             <Button
               onClick={() => setStep(2)}
               className="w-full bg-indigo-600 hover:bg-indigo-700"
@@ -148,8 +160,8 @@ export function OnboardingWizard() {
             <h2 className="mb-4 text-lg font-bold text-slate-900">
               Анализ данных
             </h2>
-            <Progress value={analysisProgress} className="mb-4 h-2" />
-            <div className="space-y-2">
+            <Progress value={analysisProgress} className="mx-auto mb-6 h-2 max-w-md" />
+            <div className="mx-auto max-w-md space-y-3">
               {ANALYSIS_STEPS.map((label, i) => (
                 <div
                   key={i}
