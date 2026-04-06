@@ -16,6 +16,11 @@ export const viewport: Viewport = {
 export const metadata = {
   title: 'MMLabs — Управление оборотным капиталом',
   description: 'Проактивный AI-агент для управления оборотным капиталом оптовых компаний',
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
