@@ -1,11 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -31,8 +29,7 @@ export default function LoginPage() {
         setError('Неверный email или пароль')
         return
       }
-      router.push('/app')
-      router.refresh()
+      window.location.href = '/app'
     } catch {
       setError('Ошибка сети. Попробуйте позже.')
     } finally {

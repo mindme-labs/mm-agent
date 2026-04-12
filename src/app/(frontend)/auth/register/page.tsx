@@ -1,11 +1,10 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 function RegisterContent() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const code = searchParams.get('code') || ''
 
@@ -38,7 +37,7 @@ function RegisterContent() {
         setError(data.error || 'Ошибка регистрации')
         return
       }
-      router.push('/app')
+      window.location.href = '/app'
     } catch {
       setError('Ошибка сети. Попробуйте позже.')
     } finally {
