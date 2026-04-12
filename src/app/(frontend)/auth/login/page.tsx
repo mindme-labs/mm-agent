@@ -18,15 +18,14 @@ export default function LoginPage() {
     }
     setLoading(true)
     try {
-      const res = await fetch('/api/users/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password }),
-        credentials: 'include',
       })
       const data = await res.json()
-      if (!res.ok || data.errors) {
-        setError('Неверный email или пароль')
+      if (!res.ok) {
+        setError(data.error || 'Неверный email или пароль')
         return
       }
       window.location.href = '/app'
