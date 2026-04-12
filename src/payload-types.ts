@@ -76,6 +76,8 @@ export interface Config {
     'ai-prompts': AiPrompt;
     'ai-usage-logs': AiUsageLog;
     'event-log': EventLog;
+    'invite-codes': InviteCode;
+    'access-requests': AccessRequest;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -92,6 +94,8 @@ export interface Config {
     'ai-prompts': AiPromptsSelect<false> | AiPromptsSelect<true>;
     'ai-usage-logs': AiUsageLogsSelect<false> | AiUsageLogsSelect<true>;
     'event-log': EventLogSelect<false> | EventLogSelect<true>;
+    'invite-codes': InviteCodesSelect<false> | InviteCodesSelect<true>;
+    'access-requests': AccessRequestsSelect<false> | AccessRequestsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -143,8 +147,11 @@ export interface User {
   id: string;
   name?: string | null;
   role: 'admin' | 'ceo';
-  mode: 'demo' | 'preprod' | 'production';
+  mode: 'trial' | 'full' | 'expired';
   hasCompletedOnboarding?: boolean | null;
+  trialExpiresAt?: string | null;
+  analysisStatus?: ('none' | 'processing' | 'complete' | 'error') | null;
+  inviteCode?: string | null;
   companyName?: string | null;
   inn?: string | null;
   companyType?: ('ip' | 'ooo') | null;
@@ -374,6 +381,35 @@ export interface EventLog {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "invite-codes".
+ */
+export interface InviteCode {
+  id: string;
+  code: string;
+  createdBy?: (string | null) | User;
+  usedBy?: (string | null) | User;
+  isUsed?: boolean | null;
+  expiresAt?: string | null;
+  channel?: ('telegram' | 'whatsapp' | 'email' | 'linkedin' | 'other') | null;
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "access-requests".
+ */
+export interface AccessRequest {
+  id: string;
+  email: string;
+  status: 'pending' | 'approved' | 'rejected';
+  inviteCode?: string | null;
+  approvedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -431,6 +467,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'event-log';
         value: string | EventLog;
+      } | null)
+    | ({
+        relationTo: 'invite-codes';
+        value: string | InviteCode;
+      } | null)
+    | ({
+        relationTo: 'access-requests';
+        value: string | AccessRequest;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -483,6 +527,9 @@ export interface UsersSelect<T extends boolean = true> {
   role?: T;
   mode?: T;
   hasCompletedOnboarding?: T;
+  trialExpiresAt?: T;
+  analysisStatus?: T;
+  inviteCode?: T;
   companyName?: T;
   inn?: T;
   companyType?: T;
@@ -654,6 +701,33 @@ export interface EventLogSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "invite-codes_select".
+ */
+export interface InviteCodesSelect<T extends boolean = true> {
+  code?: T;
+  createdBy?: T;
+  usedBy?: T;
+  isUsed?: T;
+  expiresAt?: T;
+  channel?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "access-requests_select".
+ */
+export interface AccessRequestsSelect<T extends boolean = true> {
+  email?: T;
+  status?: T;
+  inviteCode?: T;
+  approvedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -698,16 +772,10 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
  */
 export interface GlobalSetting {
   id: string;
-  allowedEmails?:
-    | {
-        email: string;
-        id?: string | null;
-      }[]
-    | null;
-  defaultMode?: ('demo' | 'preprod') | null;
   aiEnabled?: boolean | null;
   aiProvider?: ('anthropic' | 'openai') | null;
   aiModel?: string | null;
+  trialDays?: number | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -716,16 +784,10 @@ export interface GlobalSetting {
  * via the `definition` "global-settings_select".
  */
 export interface GlobalSettingsSelect<T extends boolean = true> {
-  allowedEmails?:
-    | T
-    | {
-        email?: T;
-        id?: T;
-      };
-  defaultMode?: T;
   aiEnabled?: T;
   aiProvider?: T;
   aiModel?: T;
+  trialDays?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

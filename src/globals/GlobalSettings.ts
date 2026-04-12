@@ -9,28 +9,6 @@ export const GlobalSettings: GlobalConfig = {
   },
   fields: [
     {
-      name: 'allowedEmails',
-      type: 'array',
-      label: 'Разрешённые email',
-      fields: [
-        {
-          name: 'email',
-          type: 'email',
-          required: true,
-        },
-      ],
-    },
-    {
-      name: 'defaultMode',
-      type: 'select',
-      label: 'Режим по умолчанию',
-      defaultValue: 'demo',
-      options: [
-        { label: 'Демо', value: 'demo' },
-        { label: 'Пре-прод', value: 'preprod' },
-      ],
-    },
-    {
       name: 'aiEnabled',
       type: 'checkbox',
       label: 'AI включён',
@@ -51,6 +29,12 @@ export const GlobalSettings: GlobalConfig = {
       type: 'text',
       label: 'Модель AI',
       defaultValue: 'claude-sonnet-4-20250514',
+    },
+    {
+      name: 'trialDays',
+      type: 'number',
+      label: 'Дней триала',
+      defaultValue: 7,
     },
   ],
 }

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mmlabs — Регистрация (Web)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F8F7F4;--white:#FFF;--ink:#141414;--ink2:#3D3D3D;--muted:#888680;--border:#E0DDD6;--green:#0F7B5C;--green-bg:#ECF6F2;--red:#C0392B;--red-bg:#FDF0EE}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex}
+
+/* LEFT PANEL — value prop */
+.left{width:50%;background:var(--ink);color:#fff;display:flex;flex-direction:column;justify-content:center;padding:60px 64px;position:relative}
+.left .logo{font-size:20px;font-weight:700;position:absolute;top:32px;left:40px}.logo span{color:#34D399}
+.left h2{font-size:36px;font-weight:800;line-height:1.1;letter-spacing:-.03em;margin-bottom:16px}
+.left h2 em{color:#34D399;font-style:normal}
+.left p{font-size:17px;line-height:1.65;color:rgba(255,255,255,.55);margin-bottom:40px;max-width:420px}
+
+/* Mini demo card */
+.demo-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:18px 20px;max-width:400px}
+.dc-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.dc-pill{font-size:11px;font-weight:700;padding:3px 8px;border-radius:100px;background:rgba(239,68,68,.2);color:#F87171}
+.dc-code{font-size:11px;color:rgba(255,255,255,.3)}
+.dc-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.dc-desc{font-size:13px;color:rgba(255,255,255,.4);line-height:1.5;margin-bottom:10px}
+.dc-impact{font-size:12px;font-weight:600;color:#F87171;background:rgba(239,68,68,.1);padding:6px 10px;border-radius:6px;display:inline-block}
+.left-footer{position:absolute;bottom:32px;left:40px;font-size:12px;color:rgba(255,255,255,.2)}
+
+/* RIGHT PANEL — form */
+.right{width:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:40px}
+.form-wrap{width:100%;max-width:420px}
+
+.tabs{display:flex;gap:2px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:3px;margin-bottom:28px}
+.tab{flex:1;padding:10px;text-align:center;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--muted);border:none;background:none;font-family:inherit}
+.tab.on{background:var(--ink);color:#fff}
+
+.invite{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--green);background:var(--green-bg);padding:5px 12px;border-radius:100px;border:1px solid rgba(15,123,92,.18);margin-bottom:16px}
+h1{font-size:28px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+.sub{font-size:16px;color:var(--ink2);line-height:1.55;margin-bottom:28px}
+
+.field{margin-bottom:18px}
+.field label{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
+.field input{width:100%;padding:13px 16px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;font-family:inherit;background:var(--white);outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--green)}
+.field input::placeholder{color:var(--muted)}
+.hint{font-size:12px;color:var(--muted);margin-top:5px}
+.hint a{color:var(--green);text-decoration:none}
+
+.btn{width:100%;padding:14px;border-radius:8px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;border:none;background:var(--green);color:#fff;margin-top:4px;transition:opacity .15s}
+.btn:hover{opacity:.9}
+.footer{text-align:center;margin-top:18px;font-size:14px;color:var(--muted)}
+.footer a{color:var(--green);text-decoration:none;font-weight:500}
+
+.view{display:none}.view.on{display:block}
+</style>
+</head>
+<body>
+
+<!-- LEFT: Value prop -->
+<div class="left">
+  <div class="logo">mm<span>labs</span></div>
+  <h2>Найдём, где зависают <em>ваши деньги</em></h2>
+  <p>Загрузите данные из 1С — через минуту получите конкретные рекомендации с суммами и готовыми текстами писем.</p>
+  <div class="demo-card">
+    <div class="dc-top"><span class="dc-pill">Критично</span><span class="dc-code">ДЗ-2</span></div>
+    <div class="dc-title">ООО «Вектор» — 38% дебиторки</div>
+    <div class="dc-desc">Долг ₽4.5M — задержка оплаты на месяц создаст кассовый разрыв.</div>
+    <span class="dc-impact">↓ −₽4 500 000</span>
+  </div>
+  <div class="left-footer">© 2025 mmlabs · Money Management Labs</div>
+</div>
+
+<!-- RIGHT: Form -->
+<div class="right">
+  <div class="form-wrap">
+    <div class="tabs">
+      <button class="tab on" onclick="sw('reg')">Регистрация</button>
+      <button class="tab" onclick="sw('log')">Вход</button>
+    </div>
+
+    <div class="view on" id="v-reg">
+      <div class="invite">Код: DEMO2025</div>
+      <h1>Создайте аккаунт</h1>
+      <p class="sub">7 дней бесплатного анализа данных из 1С.</p>
+      <div class="field"><label>Имя</label><input type="text" placeholder="Как к вам обращаться"></div>
+      <div class="field"><label>Email</label><input type="email" placeholder="your@company.ru" inputmode="email"></div>
+      <div class="field"><label>Пароль</label><input type="password" placeholder="Минимум 8 символов" autocomplete="new-password"><div class="hint">Латинские буквы, цифры, спецсимволы</div></div>
+      <button class="btn">Создать аккаунт</button>
+      <div class="footer">Нажимая кнопку, вы принимаете <a href="#">условия использования</a></div>
+    </div>
+
+    <div class="view" id="v-log">
+      <h1>Вход</h1>
+      <p class="sub">Email и пароль, указанные при регистрации.</p>
+      <div class="field"><label>Email</label><input type="email" placeholder="your@company.ru"></div>
+      <div class="field"><label>Пароль</label><input type="password" placeholder="Ваш пароль"><div class="hint"><a href="#">Забыли пароль?</a></div></div>
+      <button class="btn">Войти</button>
+      <div class="footer">Нет аккаунта? <a href="#" onclick="sw('reg');return false">Зарегистрироваться</a></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function sw(t){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('v-'+t).classList.add('on');
+  document.querySelector(`.tab[onclick*="${t}"]`).classList.add('on');
+}
+</script>
+</body>
+</html>

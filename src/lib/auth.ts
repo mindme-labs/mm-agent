@@ -4,44 +4,10 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 
 const COOKIE_NAME = 'payload-token'
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
 
 export function getServerURL(): string {
   return process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'
-}
-
-export function getGoogleOAuthURL(): string {
-  const rootURL = 'https://accounts.google.com/o/oauth2/v2/auth'
-  const options = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID || '',
-    redirect_uri: `${getServerURL()}/api/auth/google/callback`,
-    response_type: 'code',
-    scope: 'email profile',
-    access_type: 'offline',
-    prompt: 'consent',
-  })
-  return `${rootURL}?${options.toString()}`
-}
-
-export async function exchangeCodeForTokens(code: string) {
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      code,
-      client_id: process.env.GOOGLE_CLIENT_ID || '',
-      client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
-      redirect_uri: `${getServerURL()}/api/auth/google/callback`,
-      grant_type: 'authorization_code',
-    }),
-  })
-  return res.json()
-}
-
-export async function getGoogleUserInfo(accessToken: string) {
-  const res = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-  return res.json()
 }
 
 export function generatePayloadToken(user: { id: string; email: string }): string {
@@ -49,7 +15,7 @@ export function generatePayloadToken(user: { id: string; email: string }): strin
   return jwt.sign(
     { id: user.id, collection: 'users', email: user.email },
     secret,
-    { expiresIn: '7d' },
+    { expiresIn: '30d' },
   )
 }
 
@@ -59,7 +25,7 @@ export async function setAuthCookie(token: string): Promise<void> {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     path: '/',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: COOKIE_MAX_AGE,
     sameSite: 'lax',
   })
 }

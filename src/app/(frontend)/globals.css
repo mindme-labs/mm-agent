@@ -6,6 +6,20 @@
 
 :root {
   --font-inter: 'Inter', sans-serif;
+  --mm-bg: #F8F7F4;
+  --mm-white: #FFFFFF;
+  --mm-ink: #141414;
+  --mm-ink2: #3D3D3D;
+  --mm-muted: #888680;
+  --mm-border: #E0DDD6;
+  --mm-green: #0F7B5C;
+  --mm-green-bg: #ECF6F2;
+  --mm-red: #C0392B;
+  --mm-red-bg: #FDF0EE;
+  --mm-amber: #B45309;
+  --mm-amber-bg: #FEF3C7;
+  --mm-yellow: #CA8A04;
+  --mm-yellow-bg: #FEFCE8;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

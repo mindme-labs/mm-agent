@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mmlabs — Входящие (Mobile)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F8F7F4;--white:#FFF;--ink:#141414;--ink2:#3D3D3D;--muted:#888680;--border:#E0DDD6;--green:#0F7B5C;--green-bg:#ECF6F2;--red:#C0392B;--red-bg:#FDF0EE;--amber:#B45309;--amber-bg:#FEF3C7;--yellow:#CA8A04;--yellow-bg:#FEFCE8}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;max-width:430px;margin:0 auto}
+
+.header{background:var(--white);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:16px;font-weight:700}.logo span{color:var(--green)}
+.hdr-r{display:flex;align-items:center;gap:10px}
+.hdr-r span{font-size:13px;color:var(--muted)}
+.hdr-r button{font-size:12px;color:var(--muted);background:none;border:1px solid var(--border);padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit}
+
+.main{padding:16px 16px 90px}
+
+/* TRIAL */
+.trial{background:var(--green-bg);border:1px solid rgba(15,123,92,.12);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--green);font-weight:500}
+.trial b{font-weight:700}
+.trial-days{font-size:11px;font-weight:700;background:var(--white);padding:3px 8px;border-radius:5px;border:1px solid rgba(15,123,92,.12)}
+
+/* PAGE HEAD */
+.pg-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.pg-head h1{font-size:20px;font-weight:800}
+.hlth{font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px}
+.hlth-r{background:var(--red-bg);color:var(--red)}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.m{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.m .l{font-size:11px;color:var(--muted);margin-bottom:3px;font-weight:500}
+.m .v{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.m .v.bad{color:var(--red)}
+
+.more-btn{width:100%;background:none;border:none;font-family:inherit;font-size:13px;font-weight:600;color:var(--green);cursor:pointer;padding:8px 0;margin-bottom:12px}
+.detail{display:none;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:12px}
+.detail.vis{display:grid}
+.d-item{background:var(--white);border:1px solid var(--border);border-radius:6px;padding:8px 10px;text-align:center}
+.d-item .l{font-size:10px;color:var(--muted);margin-bottom:2px}
+.d-item .v{font-size:14px;font-weight:700}
+
+.period{font-size:11px;color:var(--muted);margin-bottom:14px}
+
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sec-head h2{font-size:15px;font-weight:700}
+.cnt{font-size:11px;font-weight:600;color:var(--red);background:var(--red-bg);padding:2px 8px;border-radius:100px}
+
+/* CARDS */
+.rc{background:var(--white);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.rc-head{padding:14px 16px;cursor:pointer}
+.rc-top{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px}
+.pill-c{background:var(--red-bg);color:var(--red)}
+.pill-h{background:var(--amber-bg);color:var(--amber)}
+.pill-m{background:var(--yellow-bg);color:var(--yellow)}
+.rc-code{font-size:10px;color:var(--muted);font-weight:600}
+.rc-rname{font-size:11px;color:var(--muted);margin-bottom:4px}
+.rc-title{font-size:15px;font-weight:700;line-height:1.3;margin-bottom:6px}
+.rc-impact{font-size:12px;font-weight:600;color:var(--red);background:var(--red-bg);padding:5px 10px;border-radius:6px;display:inline-block}
+.rc-chevron{float:right;color:var(--muted);font-size:18px;margin-top:4px;transition:transform .2s}
+.rc.open .rc-chevron{transform:rotate(180deg)}
+
+/* EXPANDABLE BODY */
+.rc-body{display:none;padding:0 16px 14px;border-top:1px solid var(--border)}
+.rc.open .rc-body{display:block;padding-top:14px}
+.rc-desc{font-size:14px;color:var(--ink2);line-height:1.6;margin-bottom:10px}
+.rc-adv{background:var(--green-bg);border:1px solid rgba(15,123,92,.1);border-radius:7px;padding:10px 12px;margin-bottom:12px}
+.rc-adv-l{font-size:11px;font-weight:600;color:var(--green);margin-bottom:2px}
+.rc-adv p{font-size:13px;color:var(--ink2);line-height:1.5}
+.rc-acts{display:flex;gap:5px;margin-bottom:10px}
+.rc-btn{flex:1;padding:11px;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border:none}
+.rc-btn-p{background:var(--ink);color:#fff}
+.rc-btn-s{background:var(--bg);color:var(--ink2);border:1px solid var(--border)}
+.rc-copy{width:100%;background:var(--bg);color:var(--ink2);border:1px solid var(--border);padding:9px;border-radius:7px;font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:10px}
+.rc-fb{border-top:1px solid var(--border);padding-top:10px;display:flex;align-items:center;gap:6px}
+.rc-fb-l{font-size:11px;color:var(--muted);flex:1}
+.fb{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:6px 0 env(safe-area-inset-bottom,6px)}
+.bnav-inner{display:flex;justify-content:space-around}
+.ni{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:500;color:var(--muted);padding:6px 14px;position:relative;text-decoration:none}
+.ni.on{color:var(--green)}
+.ni svg{width:20px;height:20px}
+.ni-badge{position:absolute;top:2px;right:6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:100px}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">mm<span>labs</span></div>
+  <div class="hdr-r"><span>Илья Ф.</span><button>Выйти</button></div>
+</div>
+
+<div class="main">
+  <div class="trial">Триал · осталось <b>5 дней</b><span class="trial-days">до 15 апр</span></div>
+
+  <div class="pg-head"><h1>Входящие</h1><span class="hlth hlth-r">Риск</span></div>
+
+  <div class="metrics">
+    <div class="m"><div class="l">Выручка</div><div class="v">₽87.1M</div></div>
+    <div class="m"><div class="l">Дебиторка</div><div class="v bad">₽12.4M</div></div>
+    <div class="m"><div class="l">Кредиторка</div><div class="v">₽9.8M</div></div>
+    <div class="m"><div class="l">Рекомендаций</div><div class="v">7</div></div>
+  </div>
+  <button class="more-btn" onclick="this.nextElementSibling.classList.toggle('vis');this.textContent=this.textContent==='Подробнее ↓'?'Скрыть ↑':'Подробнее ↓'">Подробнее ↓</button>
+  <div class="detail">
+    <div class="d-item"><div class="l">Оборач. ДЗ</div><div class="v">52 дн.</div></div>
+    <div class="d-item"><div class="l">Оборач. КЗ</div><div class="v">34 дн.</div></div>
+    <div class="d-item"><div class="l">Рентабельность</div><div class="v">18.2%</div></div>
+  </div>
+  <div class="period">Данные за 2025 год</div>
+
+  <div class="sec-head"><h2>Рекомендации</h2><span class="cnt">7 новых</span></div>
+
+  <!-- CARD 1: collapsed by default, expandable -->
+  <div class="rc" onclick="this.classList.toggle('open')">
+    <div class="rc-head">
+      <span class="rc-chevron">▾</span>
+      <div class="rc-top"><span class="pill pill-c">Критично</span><span class="rc-code">ДЗ-2</span></div>
+      <div class="rc-rname">Концентрация дебиторской задолженности</div>
+      <div class="rc-title">ООО «Вектор» — 38% дебиторки</div>
+      <span class="rc-impact">↓ −₽4 500 000</span>
+    </div>
+    <div class="rc-body">
+      <div class="rc-desc">Долг одного контрагента — ₽4.5M, это 38% всей ДЗ. Задержка оплаты на месяц создаст кассовый разрыв.</div>
+      <div class="rc-adv"><div class="rc-adv-l">Рекомендация</div><p>Скидка 1.5% за досрочное погашение ₽2M до 15-го числа.</p></div>
+      <div class="rc-acts"><button class="rc-btn rc-btn-p">Взять в работу</button><button class="rc-btn rc-btn-s">Отклонить</button></div>
+      <button class="rc-copy">📋 Скопировать текст</button>
+      <div class="rc-fb"><span class="rc-fb-l">Полезно?</span><button class="fb">👍</button><button class="fb">👎</button><button class="fb">💬</button></div>
+    </div>
+  </div>
+
+  <div class="rc" onclick="this.classList.toggle('open')">
+    <div class="rc-head">
+      <span class="rc-chevron">▾</span>
+      <div class="rc-top"><span class="pill pill-h">Высокий</span><span class="rc-code">ЗАП-1</span></div>
+      <div class="rc-rname">Неликвидные складские запасы</div>
+      <div class="rc-title">Герметик — 90+ дней без продаж</div>
+      <span class="rc-impact">↓ −₽1 820 000</span>
+    </div>
+    <div class="rc-body">
+      <div class="rc-desc">Товар без движения более 90 дней. ₽1.82M заморожено на складе.</div>
+      <div class="rc-adv"><div class="rc-adv-l">Рекомендация</div><p>Спец-оффер прошлым покупателям со скидкой 15%.</p></div>
+      <div class="rc-acts"><button class="rc-btn rc-btn-p">Взять в работу</button><button class="rc-btn rc-btn-s">Отклонить</button></div>
+      <button class="rc-copy">📋 Скопировать текст</button>
+      <div class="rc-fb"><span class="rc-fb-l">Полезно?</span><button class="fb">👍</button><button class="fb">👎</button><button class="fb">💬</button></div>
+    </div>
+  </div>
+
+  <div class="rc" onclick="this.classList.toggle('open')">
+    <div class="rc-head">
+      <span class="rc-chevron">▾</span>
+      <div class="rc-top"><span class="pill pill-h">Высокий</span><span class="rc-code">ДЗ-1</span></div>
+      <div class="rc-rname">Просроченная ДЗ</div>
+      <div class="rc-title">ИП Соколов — просрочка 2 мес.</div>
+      <span class="rc-impact">↓ −₽840 000</span>
+    </div>
+    <div class="rc-body">
+      <div class="rc-desc">Нет оплат 2+ месяца. Долг — ₽840 000.</div>
+      <div class="rc-adv"><div class="rc-adv-l">Рекомендация</div><p>Досудебная претензия с расчётом пени (0.1%/день).</p></div>
+      <div class="rc-acts"><button class="rc-btn rc-btn-p">Взять в работу</button><button class="rc-btn rc-btn-s">Отклонить</button></div>
+      <button class="rc-copy">📋 Скопировать текст</button>
+      <div class="rc-fb"><span class="rc-fb-l">Полезно?</span><button class="fb">👍</button><button class="fb">👎</button><button class="fb">💬</button></div>
+    </div>
+  </div>
+
+  <div class="rc" onclick="this.classList.toggle('open')">
+    <div class="rc-head">
+      <span class="rc-chevron">▾</span>
+      <div class="rc-top"><span class="pill pill-m">Средний</span><span class="rc-code">ФЦ-1</span></div>
+      <div class="rc-rname">Дисбаланс платёжных циклов</div>
+      <div class="rc-title">Вы платите за 34 дня, вам — за 52</div>
+      <span class="rc-impact">↓ Стратегический риск</span>
+    </div>
+    <div class="rc-body">
+      <div class="rc-desc">Вы кредитуете рынок за свой счёт. Разрыв 18 дней.</div>
+      <div class="rc-adv"><div class="rc-adv-l">Рекомендация</div><p>Сократить отсрочку для новых клиентов до 30 дней.</p></div>
+      <div class="rc-acts"><button class="rc-btn rc-btn-p">Взять в работу</button><button class="rc-btn rc-btn-s">Отклонить</button></div>
+      <button class="rc-copy">📋 Скопировать текст</button>
+      <div class="rc-fb"><span class="rc-fb-l">Полезно?</span><button class="fb">👍</button><button class="fb">👎</button><button class="fb">💬</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="bnav"><div class="bnav-inner">
+  <a class="ni on" href="#"><svg viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 7h16" stroke="currentColor" stroke-width="1.5"/></svg>Входящие<span class="ni-badge">7</span></a>
+  <a class="ni" href="#"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Задачи</a>
+  <a class="ni" href="#"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 6h6M7 10h6M7 14h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Данные</a>
+</div></div>
+</body>
+</html>

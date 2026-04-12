@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mmlabs — Входящие</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F8F7F4;--white:#FFF;--ink:#141414;--ink2:#3D3D3D;--muted:#94908A;--border:#E0DDD6;--green:#0F7B5C;--green-bg:#ECF6F2;--red:#C0392B;--red-light:#FDF0EE;--amber:#B45309;--amber-light:#FEF7E6;--yellow:#9A7B10;--yellow-light:#FEFCE8}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.side{width:260px;flex-shrink:0;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;height:100vh}
+.side-logo{padding:28px;font-size:19px;font-weight:700;margin-bottom:12px}.side-logo span{color:var(--green)}
+.side-nav{flex:1;padding:0 14px;display:flex;flex-direction:column;gap:2px}
+.si{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;font-size:15px;font-weight:500;color:var(--muted);cursor:pointer;text-decoration:none;transition:all .15s;position:relative}
+.si:hover{background:var(--bg);color:var(--ink)}
+.si.on{background:var(--green-bg);color:var(--green)}
+.si svg{width:20px;height:20px;flex-shrink:0}
+.si-badge{background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;margin-left:auto}
+.side-foot{padding:24px 28px;border-top:1px solid var(--border)}
+.sf-name{font-size:15px;font-weight:600;margin-bottom:2px}
+.sf-email{font-size:13px;color:var(--muted);margin-bottom:10px}
+.sf-out{font-size:13px;color:var(--muted);cursor:pointer;background:none;border:none;font-family:inherit}
+.sf-out:hover{color:var(--ink)}
+
+/* MAIN — centered in remaining space */
+.main{margin-left:260px;flex:1;display:flex;justify-content:center;padding:40px 48px 60px}
+.content{width:100%;max-width:860px}
+
+/* TRIAL STRIP */
+.trial{background:var(--green-bg);border-radius:10px;padding:12px 20px;margin-bottom:32px;display:flex;align-items:center;justify-content:space-between;font-size:15px;color:var(--green)}
+.trial b{font-weight:700}
+.trial-end{font-size:13px;font-weight:600;background:var(--white);padding:5px 12px;border-radius:7px;border:1px solid rgba(15,123,92,.12)}
+
+/* SUMMARY — horizontal strip, large numbers */
+.summary{display:flex;align-items:baseline;gap:48px;padding:8px 0 28px;margin-bottom:28px;border-bottom:1px solid var(--border)}
+.sum-item{}
+.sum-label{font-size:13px;color:var(--muted);font-weight:500;margin-bottom:4px}
+.sum-val{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.sum-val.alert{color:var(--red)}
+.sum-extra{display:flex;gap:32px;margin-left:auto}
+.sum-sm{text-align:right}
+.sum-sm .sum-val{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.health{display:inline-block;font-size:12px;font-weight:600;color:var(--red);background:var(--red-light);padding:3px 10px;border-radius:100px;margin-top:4px}
+
+/* SECTION HEAD */
+.sec-head{margin-bottom:20px}
+.sec-head h2{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+
+/* CARD — clean, left accent, no noise */
+.card{background:var(--white);border:1px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden;transition:box-shadow .2s}
+.card:hover{box-shadow:0 4px 24px rgba(20,20,20,.05)}
+.card-inner{padding:32px 36px}
+
+/* Severity accent — thin top border */
+.card.critical{border-top:3px solid var(--red)}
+.card.high{border-top:3px solid var(--amber)}
+.card.medium{border-top:3px solid var(--yellow)}
+
+/* Severity word — subtle, top-right */
+.card-severity{font-size:12px;font-weight:600;float:right;margin-top:2px}
+.card.critical .card-severity{color:var(--red)}
+.card.high .card-severity{color:var(--amber)}
+.card.medium .card-severity{color:var(--yellow)}
+
+.card-title{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin-bottom:8px;max-width:90%}
+.card-amount{font-size:17px;font-weight:700;margin-bottom:18px}
+.card.critical .card-amount{color:var(--red)}
+.card.high .card-amount{color:var(--amber)}
+.card.medium .card-amount{color:var(--yellow)}
+
+/* Two-column: context + recommendation */
+.card-body{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:24px}
+.card-context{font-size:16px;color:var(--ink2);line-height:1.65}
+.card-rec{background:var(--green-bg);border-radius:10px;padding:20px 22px}
+.card-rec-label{font-size:12px;font-weight:600;color:var(--green);margin-bottom:6px;letter-spacing:.03em}
+.card-rec p{font-size:15px;color:var(--ink2);line-height:1.6}
+
+/* ACTIONS — clean row */
+.card-actions{display:flex;align-items:center;gap:10px;padding-top:20px;border-top:1px solid var(--border)}
+.btn-act{padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-secondary{background:transparent;color:var(--ink2);border:1.5px solid var(--border)}
+.btn-secondary:hover{border-color:var(--ink)}
+.link-copy{font-size:13px;color:var(--green);font-weight:500;cursor:pointer;background:none;border:none;font-family:inherit;margin-left:8px}
+.link-copy:hover{text-decoration:underline}
+.actions-spacer{flex:1}
+
+/* FEEDBACK — typography, no emoji */
+.feedback{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.feedback span{font-weight:500}
+.fb-link{color:var(--ink2);font-weight:500;cursor:pointer;background:none;border:none;font-family:inherit;font-size:13px;padding:4px 8px;border-radius:5px;transition:all .15s}
+.fb-link:hover{background:var(--green-bg);color:var(--green)}
+.fb-sep{color:var(--border)}
+</style>
+</head>
+<body>
+
+<div class="side">
+  <div class="side-logo">mm<span>labs</span></div>
+  <div class="side-nav">
+    <a class="si on" href="#">
+      <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 7h16" stroke="currentColor" stroke-width="1.5"/></svg>
+      Входящие
+      <span class="si-badge">7</span>
+    </a>
+    <a class="si" href="#">
+      <svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Мои задачи
+    </a>
+    <a class="si" href="#">
+      <svg viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 6h6M7 10h6M7 14h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Данные
+    </a>
+  </div>
+  <div class="side-foot">
+    <div class="sf-name">Илья Фёдоров</div>
+    <div class="sf-email">ilya@company.ru</div>
+    <button class="sf-out">Выйти</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="content">
+
+    <div class="trial">Триал-доступ · осталось <b>5 дней</b><span class="trial-end">до 15 апреля</span></div>
+
+    <!-- SUMMARY -->
+    <div class="summary">
+      <div class="sum-item">
+        <div class="sum-label">Выручка за 2025</div>
+        <div class="sum-val">₽87.1 млн</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-label">Вам должны</div>
+        <div class="sum-val alert">₽12.4 млн</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-label">Вы должны</div>
+        <div class="sum-val">₽9.8 млн</div>
+      </div>
+      <div class="sum-extra">
+        <div class="sum-sm">
+          <div class="sum-label">Оборач. ДЗ / КЗ</div>
+          <div class="sum-val">52 / 34 дн.</div>
+        </div>
+        <div class="sum-sm">
+          <div class="sum-label">Рентабельность</div>
+          <div class="sum-val">18.2%</div>
+          <div class="health">Высокий риск</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARDS -->
+    <div class="sec-head"><h2>Требуют внимания — 7 ситуаций</h2></div>
+
+    <div class="card critical">
+      <div class="card-inner">
+        <span class="card-severity">Критично</span>
+        <div class="card-title">ООО «Вектор» держит 38% вашей дебиторки</div>
+        <div class="card-amount">₽4.5 млн зависли у одного контрагента</div>
+        <div class="card-body">
+          <div class="card-context">Один клиент аккумулировал 38% всей дебиторской задолженности. Если он задержит оплату на месяц — возникнет кассовый разрыв. Это системный риск, который нужно снижать прямо сейчас.</div>
+          <div class="card-rec">
+            <div class="card-rec-label">Что делать</div>
+            <p>Предложить скидку 1.5% за досрочное погашение ₽2 млн до 15-го числа. Текст оффера готов — можно отправить сегодня.</p>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-act btn-primary">Взять в работу</button>
+          <button class="btn-act btn-secondary">Не сейчас</button>
+          <button class="link-copy">Скопировать текст оффера</button>
+          <span class="actions-spacer"></span>
+          <div class="feedback">
+            <span>Полезно?</span>
+            <button class="fb-link" onclick="fb(this,'да')">Да</button>
+            <span class="fb-sep">·</span>
+            <button class="fb-link" onclick="fb(this,'нет')">Нет</button>
+            <span class="fb-sep">·</span>
+            <button class="fb-link" onclick="fb(this,'отзыв')">Написать отзыв</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card high">
+      <div class="card-inner">
+        <span class="card-severity">Высокий</span>
+        <div class="card-title">Герметик лежит на складе 90+ дней без движения</div>
+        <div class="card-amount">₽1.82 млн заморожено</div>
+        <div class="card-body">
+          <div class="card-context">Эта позиция не продавалась более трёх месяцев. Капитал заморожен без перспективы реализации по текущей цене. Чем дольше товар лежит — тем ниже шанс его продать.</div>
+          <div class="card-rec">
+            <div class="card-rec-label">Что делать</div>
+            <p>Отправить спец-оффер со скидкой 15% тем, кто покупал этот товар раньше. Предложение на 7 дней. Текст готов.</p>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-act btn-primary">Взять в работу</button>
+          <button class="btn-act btn-secondary">Не сейчас</button>
+          <button class="link-copy">Скопировать текст оффера</button>
+          <span class="actions-spacer"></span>
+          <div class="feedback">
+            <span>Полезно?</span>
+            <button class="fb-link">Да</button><span class="fb-sep">·</span>
+            <button class="fb-link">Нет</button><span class="fb-sep">·</span>
+            <button class="fb-link">Написать отзыв</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card high">
+      <div class="card-inner">
+        <span class="card-severity">Высокий</span>
+        <div class="card-title">ИП Соколов не платит уже 2 месяца</div>
+        <div class="card-amount">₽840 тыс. просрочено</div>
+        <div class="card-body">
+          <div class="card-context">Последняя оплата от этого контрагента была более двух месяцев назад. Долг — ₽840 000. Без формального воздействия ситуация не изменится.</div>
+          <div class="card-rec">
+            <div class="card-rec-label">Что делать</div>
+            <p>Направить досудебную претензию с расчётом пени 0.1% в день. Срок на оплату — 10 рабочих дней. Текст претензии готов.</p>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-act btn-primary">Взять в работу</button>
+          <button class="btn-act btn-secondary">Не сейчас</button>
+          <button class="link-copy">Скопировать текст претензии</button>
+          <span class="actions-spacer"></span>
+          <div class="feedback">
+            <span>Полезно?</span>
+            <button class="fb-link">Да</button><span class="fb-sep">·</span>
+            <button class="fb-link">Нет</button><span class="fb-sep">·</span>
+            <button class="fb-link">Написать отзыв</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card medium">
+      <div class="card-inner">
+        <span class="card-severity">Средний</span>
+        <div class="card-title">Вы платите поставщикам быстрее, чем клиенты платят вам</div>
+        <div class="card-amount">Разрыв 18 дней — вы кредитуете рынок</div>
+        <div class="card-body">
+          <div class="card-context">Клиенты рассчитываются с вами в среднем за 52 дня, а вы платите поставщикам за 34. Разница в 18 дней означает, что вы постоянно финансируете чужой бизнес из собственных оборотных средств.</div>
+          <div class="card-rec">
+            <div class="card-rec-label">Что делать</div>
+            <p>Сократить типовую отсрочку для новых клиентов с 45 до 30 дней. Провести переговоры с ключевыми поставщиками об увеличении отсрочки до 45 дней.</p>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-act btn-primary">Взять в работу</button>
+          <button class="btn-act btn-secondary">Не сейчас</button>
+          <button class="link-copy">Скопировать рекомендацию</button>
+          <span class="actions-spacer"></span>
+          <div class="feedback">
+            <span>Полезно?</span>
+            <button class="fb-link">Да</button><span class="fb-sep">·</span>
+            <button class="fb-link">Нет</button><span class="fb-sep">·</span>
+            <button class="fb-link">Написать отзыв</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function fb(el, type) {
+  const wrap = el.closest('.feedback');
+  wrap.innerHTML = '<span style="color:var(--green);font-weight:600">Спасибо за отзыв</span>';
+}
+</script>
+</body>
+</html>

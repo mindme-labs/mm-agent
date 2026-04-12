@@ -6,17 +6,17 @@ export function middleware(request: NextRequest) {
 
   if (pathname.startsWith('/app')) {
     if (!token) {
-      return NextResponse.redirect(new URL('/auth', request.url))
+      return NextResponse.redirect(new URL('/auth/login', request.url))
     }
   }
 
-  if (pathname === '/auth' && token) {
-    return NextResponse.redirect(new URL('/app/inbox', request.url))
+  if (pathname.startsWith('/auth/') && token) {
+    return NextResponse.redirect(new URL('/app', request.url))
   }
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/app/:path*', '/auth'],
+  matcher: ['/app/:path*', '/auth/:path*'],
 }

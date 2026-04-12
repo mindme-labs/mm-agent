@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>mmlabs — AI-анализ оборотного капитала</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F8F7F4;--white:#FFFFFF;--ink:#141414;--ink2:#3D3D3D;--muted:#888680;--border:#E0DDD6;--green:#0F7B5C;--green-bg:#ECF6F2;--green-mid:#0A5E44;--red:#C0392B;--red-bg:#FDF0EE;--amber:#B45309;--amber-bg:#FEF3C7}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+nav{background:rgba(248,247,244,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.nav-inner{max-width:1080px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px}
+.logo{font-size:17px;font-weight:700}.logo span{color:var(--green)}
+.nav-right{display:flex;gap:8px;align-items:center}
+.nav-btn{font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:7px;cursor:pointer;border:none;transition:opacity .15s}
+.nav-btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.nav-btn-ghost:hover{color:var(--ink);border-color:var(--ink)}
+.nav-btn-dark{background:var(--ink);color:#fff}
+.nav-btn-dark:hover{opacity:.85}
+
+.container{max-width:1080px;margin:0 auto;padding:0 24px}
+
+/* HERO */
+.hero{padding:64px 0 0;background:var(--white);border-bottom:1px solid var(--border);text-align:center;overflow:hidden}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--green-bg);color:var(--green);font-size:12px;font-weight:600;padding:5px 13px;border-radius:100px;margin-bottom:24px;border:1px solid rgba(15,123,92,.2)}
+.hero-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green)}
+.hero h1{font-size:clamp(32px,5vw,56px);font-weight:800;line-height:1.06;letter-spacing:-.03em;max-width:700px;margin:0 auto 18px}
+.hero h1 .accent{color:var(--green)}
+.hero .sub{font-size:clamp(16px,2vw,19px);line-height:1.6;color:var(--ink2);max-width:520px;margin:0 auto 36px}
+
+/* SCREEN MOCK */
+.hero-screen{max-width:780px;margin:0 auto;background:var(--bg);border:1px solid var(--border);border-radius:14px 14px 0 0;border-bottom:none;padding:12px 12px 0}
+.screen-chrome{background:var(--ink);border-radius:10px 10px 0 0;overflow:hidden}
+.screen-topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
+.screen-dots{display:flex;gap:5px}
+.screen-dots span{width:9px;height:9px;border-radius:50%;display:block}
+.screen-url{font-size:11px;color:rgba(255,255,255,.25);font-family:monospace}
+.screen-content{padding:16px}
+.sc-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.sc-m{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:7px;padding:10px 12px}
+.sc-m .lbl{font-size:10px;color:rgba(255,255,255,.3);margin-bottom:3px}
+.sc-m .val{font-size:18px;font-weight:700;color:#fff;line-height:1}
+.sc-m .val.danger{color:#F87171}
+.sc-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sc-c{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:12px 14px}
+.sc-pill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px;margin-bottom:6px;display:inline-block}
+.sc-pill-r{background:rgba(239,68,68,.15);color:#F87171}
+.sc-pill-a{background:rgba(251,191,36,.12);color:#FBBF24}
+.sc-c h4{font-size:12px;font-weight:600;color:rgba(255,255,255,.85);line-height:1.35;margin-bottom:4px}
+.sc-c p{font-size:11px;color:rgba(255,255,255,.35);line-height:1.45}
+
+/* CTA SECTION */
+.cta-section{padding:56px 0 72px;text-align:center}
+.cta-section h2{font-size:clamp(22px,3.5vw,32px);font-weight:800;line-height:1.1;letter-spacing:-.02em;margin-bottom:10px}
+.cta-section .cta-sub{font-size:15px;color:var(--muted);margin-bottom:32px}
+
+.cta-box{max-width:420px;margin:0 auto}
+.cta-row{display:flex;gap:8px;margin-bottom:12px}
+.cta-input{flex:1;padding:13px 16px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;font-family:inherit;background:var(--white);outline:none;transition:border-color .2s}
+.cta-input:focus{border-color:var(--green)}
+.cta-input::placeholder{color:var(--muted)}
+.cta-btn{padding:13px 22px;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;border:none;transition:opacity .15s,transform .15s;white-space:nowrap}
+.cta-btn:hover{opacity:.9;transform:translateY(-1px)}
+.cta-btn-green{background:var(--green);color:#fff}
+.cta-or{font-size:13px;color:var(--muted);margin-bottom:12px}
+.cta-request{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:var(--ink2);cursor:pointer;padding:10px 20px;border-radius:8px;border:1px solid var(--border);background:transparent;font-family:inherit;transition:border-color .15s}
+.cta-request:hover{border-color:var(--ink)}
+.cta-login{margin-top:20px;font-size:13px;color:var(--muted)}
+.cta-login a{color:var(--green);text-decoration:none;font-weight:500}
+.cta-login a:hover{text-decoration:underline}
+
+/* REQUEST FORM (hidden by default) */
+.request-form{display:none;max-width:420px;margin:0 auto}
+.request-form.visible{display:block}
+.request-msg{display:none;background:var(--green-bg);border:1px solid rgba(15,123,92,.2);border-radius:10px;padding:16px 20px;color:var(--green);font-size:14px;font-weight:500;max-width:420px;margin:16px auto 0}
+.request-msg.visible{display:block}
+.cta-back{font-size:13px;color:var(--muted);cursor:pointer;margin-top:12px;display:inline-block}
+.cta-back:hover{color:var(--ink)}
+
+/* BRIEF FEATURES */
+.features{padding:48px 0;background:var(--white);border-top:1px solid var(--border)}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;text-align:center}
+.feat-grid h3{font-size:15px;font-weight:700;margin-bottom:6px}
+.feat-grid p{font-size:14px;color:var(--ink2);line-height:1.6}
+.feat-num{font-size:28px;font-weight:800;color:var(--green);margin-bottom:8px}
+
+footer{padding:28px 0;border-top:1px solid var(--border);text-align:center;font-size:12px;color:var(--muted)}
+footer a{color:var(--green);text-decoration:none}
+
+@media(max-width:768px){
+  .sc-metrics{grid-template-columns:1fr 1fr}
+  .sc-cards{grid-template-columns:1fr}
+  .feat-grid{grid-template-columns:1fr;gap:24px}
+  .cta-row{flex-direction:column}
+}
+@media(max-width:480px){
+  .hero{padding:48px 0 0}
+  .hero-screen{padding:8px 8px 0}
+  .nav-btn-ghost{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo">mm<span>labs</span></div>
+    <div class="nav-right">
+      <button class="nav-btn nav-btn-ghost" onclick="showLogin()">Войти</button>
+      <button class="nav-btn nav-btn-dark" onclick="scrollTo('.cta-section')">Получить доступ</button>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">Money Management Labs</div>
+    <h1>Деньги зависают <span class="accent">незаметно</span><br>Мы это видим первыми</h1>
+    <p class="sub">Анализирует данные из вашей 1С и формирует рекомендации с готовыми текстами — для немедленных действий.</p>
+
+    <div class="hero-screen">
+      <div class="screen-chrome">
+        <div class="screen-topbar">
+          <div class="screen-dots">
+            <span style="background:#FF5F57"></span>
+            <span style="background:#FFBD2E"></span>
+            <span style="background:#28CA42"></span>
+          </div>
+          <span class="screen-url">mmlabs.ru/app/inbox</span>
+          <div style="width:50px"></div>
+        </div>
+        <div class="screen-content">
+          <div class="sc-metrics">
+            <div class="sc-m"><div class="lbl">Дебиторка</div><div class="val danger">₽12.4M</div></div>
+            <div class="sc-m"><div class="lbl">Выручка</div><div class="val">₽87.1M</div></div>
+            <div class="sc-m"><div class="lbl">Запасы</div><div class="val">₽31.2M</div></div>
+            <div class="sc-m"><div class="lbl">Кредиторка</div><div class="val">₽9.8M</div></div>
+          </div>
+          <div class="sc-cards">
+            <div class="sc-c">
+              <span class="sc-pill sc-pill-r">Критично</span>
+              <h4>ООО «Вектор» — 38% дебиторки</h4>
+              <p>₽4.5M под риском. Готов оффер на досрочное погашение со скидкой 1.5%.</p>
+            </div>
+            <div class="sc-c">
+              <span class="sc-pill sc-pill-a">Высокий</span>
+              <h4>Герметик — 90+ дней без продаж</h4>
+              <p>₽1.8M заморожено. Готов спец-оффер покупателям со скидкой.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="container">
+    <h2>Узнайте, где зависают ваши деньги</h2>
+    <p class="cta-sub">7 дней бесплатно. Загрузите ОСВ из 1С — получите анализ за минуту.</p>
+
+    <div class="cta-box" id="cta-invite">
+      <div class="cta-row">
+        <input class="cta-input" type="text" placeholder="Инвайт-код" id="invite-code" maxlength="12" autocomplete="off">
+        <button class="cta-btn cta-btn-green" onclick="validateCode()">Получить доступ</button>
+      </div>
+      <div id="code-error" style="display:none;font-size:13px;color:var(--red);margin-bottom:10px;text-align:left">Код недействителен. Проверьте правильность ввода.</div>
+      <p class="cta-or">Нет кода?</p>
+      <button class="cta-request" onclick="showRequestForm()">Запросить доступ по email</button>
+      <div class="cta-login">Уже есть аккаунт? <a href="/auth/login">Войти →</a></div>
+    </div>
+
+    <div class="request-form" id="request-form">
+      <div class="cta-row">
+        <input class="cta-input" type="email" placeholder="Рабочий email" id="request-email">
+        <button class="cta-btn cta-btn-green" onclick="submitRequest()">Отправить</button>
+      </div>
+      <span class="cta-back" onclick="showInviteForm()">← Назад к вводу кода</span>
+    </div>
+
+    <div class="request-msg" id="request-msg">✓ Спасибо! Мы свяжемся с вами в ближайшее время.</div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="container">
+    <div class="feat-grid">
+      <div>
+        <div class="feat-num">9</div>
+        <h3>Типов рисков</h3>
+        <p>Дебиторка, склад, кредиторы, маржинальность, платёжные циклы — проверяются автоматически.</p>
+      </div>
+      <div>
+        <div class="feat-num">60 сек</div>
+        <h3>От файла до результата</h3>
+        <p>Загрузите ОСВ из 1С — и через минуту получите персональные рекомендации с суммами.</p>
+      </div>
+      <div>
+        <div class="feat-num">1 клик</div>
+        <h3>Готовые тексты</h3>
+        <p>Каждая рекомендация содержит черновик письма с данными контрагента. Копируйте и отправляйте.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    © 2025 mmlabs. Money Management Labs · <a href="mailto:hello@mmlabs.ru">hello@mmlabs.ru</a>
+  </div>
+</footer>
+
+<script>
+function scrollTo(sel){document.querySelector(sel)?.scrollIntoView({behavior:'smooth'})}
+function showLogin(){window.location.href='/auth/login'}
+
+function validateCode(){
+  const code=document.getElementById('invite-code').value.trim();
+  if(!code){document.getElementById('code-error').style.display='block';return}
+  // In production: POST /api/invite-codes/validate
+  // On success: redirect to /auth/register?code=XXX
+  window.location.href='/auth/register?code='+encodeURIComponent(code);
+}
+
+function showRequestForm(){
+  document.getElementById('cta-invite').style.display='none';
+  document.getElementById('request-form').classList.add('visible');
+}
+function showInviteForm(){
+  document.getElementById('request-form').classList.remove('visible');
+  document.getElementById('cta-invite').style.display='block';
+}
+function submitRequest(){
+  const email=document.getElementById('request-email').value.trim();
+  if(!email||!email.includes('@'))return;
+  // In production: POST /api/access-requests {email}
+  document.getElementById('request-form').classList.remove('visible');
+  document.getElementById('request-msg').classList.add('visible');
+}
+
+document.getElementById('invite-code').addEventListener('keydown',e=>{if(e.key==='Enter')validateCode()});
+document.getElementById('request-email')?.addEventListener('keydown',e=>{if(e.key==='Enter')submitRequest()});
+</script>
+</body>
+</html>

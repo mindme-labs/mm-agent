@@ -12,7 +12,7 @@ export async function POST() {
   } catch (err) {
     console.error('[Auth] Logout error:', err)
   }
-  return NextResponse.redirect(getServerURL() + '/auth', { status: 303 })
+  return NextResponse.redirect(getServerURL() + '/', { status: 303 })
 }
 
 export async function GET() {
@@ -25,5 +25,5 @@ export async function GET() {
   } catch (err) {
     console.error('[Auth] Logout error:', err)
   }
-  return NextResponse.redirect(getServerURL() + '/auth', { status: 303 })
+  return NextResponse.redirect(getServerURL() + '/', { status: 303 })
 }

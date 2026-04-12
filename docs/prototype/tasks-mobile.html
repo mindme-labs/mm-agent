@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mmlabs — Мои задачи (Mobile)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F8F7F4;--white:#FFF;--ink:#141414;--ink2:#3D3D3D;--muted:#888680;--border:#E0DDD6;--green:#0F7B5C;--green-bg:#ECF6F2;--red:#C0392B;--red-bg:#FDF0EE;--amber:#B45309;--amber-bg:#FEF3C7;--yellow:#CA8A04;--yellow-bg:#FEFCE8}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;max-width:430px;margin:0 auto}
+
+.header{background:var(--white);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:16px;font-weight:700}.logo span{color:var(--green)}
+.hdr-r{display:flex;align-items:center;gap:10px}
+.hdr-r span{font-size:13px;color:var(--muted)}
+.hdr-r button{font-size:12px;color:var(--muted);background:none;border:1px solid var(--border);padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit}
+
+.main{padding:16px 16px 100px}
+
+h1{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+
+/* SUMMARY STRIP */
+.summary{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;scrollbar-width:none}
+.summary::-webkit-scrollbar{display:none}
+.sum{flex-shrink:0;padding:10px 14px;background:var(--white);border:1px solid var(--border);border-radius:8px;min-width:120px}
+.sum .l{font-size:10px;color:var(--muted);margin-bottom:2px;font-weight:500}
+.sum .v{font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.sum .v.red{color:var(--red)}
+.sum .v.green{color:var(--green)}
+
+/* OVERDUE BANNER */
+.overdue-banner{background:var(--red-bg);border:1px solid rgba(192,57,43,.12);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--red);font-weight:500;display:flex;align-items:center;gap:8px}
+.overdue-dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0}
+
+/* TABS + VIEW TOGGLE */
+.controls{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.tabs{display:flex;gap:2px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:2px}
+.tab{padding:7px 12px;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer;color:var(--muted);border:none;background:none;font-family:inherit;white-space:nowrap;position:relative}
+.tab.on{background:var(--ink);color:#fff}
+.tab-badge{position:absolute;top:-4px;right:-2px;background:var(--red);color:#fff;font-size:8px;font-weight:700;padding:1px 4px;border-radius:100px;min-width:14px;text-align:center}
+.view-toggle{display:flex;gap:2px;background:var(--white);border:1px solid var(--border);border-radius:6px;padding:2px}
+.vt{padding:5px 8px;border-radius:4px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:inherit;display:flex;align-items:center}
+.vt.on{background:var(--ink);color:#fff}
+.vt svg{width:14px;height:14px}
+
+/* TABLE VIEW */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:500px}
+th{text-align:left;font-size:11px;font-weight:600;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:hover{background:var(--white)}
+.t-title{font-weight:600;line-height:1.3;margin-bottom:2px}
+.t-sub{font-size:11px;color:var(--muted)}
+.t-amount{font-weight:700;white-space:nowrap}
+.t-amount.red{color:var(--red)}
+.t-date{white-space:nowrap}
+.t-overdue{color:var(--red);font-weight:600}
+.t-status{font-size:11px;font-weight:600;padding:2px 7px;border-radius:100px;white-space:nowrap}
+.st-progress{background:var(--amber-bg);color:var(--amber)}
+.st-done{background:var(--green-bg);color:var(--green)}
+.st-stuck{background:var(--red-bg);color:var(--red)}
+.st-dismissed{background:#F1F0EC;color:var(--muted)}
+.row-overdue{background:var(--red-bg)}
+
+/* CARD VIEW */
+.cards{display:flex;flex-direction:column;gap:8px}
+.card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.card.overdue{border-left:3px solid var(--red);border-color:rgba(192,57,43,.2)}
+.card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.card-sev{font-size:11px;font-weight:600}
+.sev-c{color:var(--red)}.sev-h{color:var(--amber)}.sev-m{color:var(--yellow)}
+.card-amount{font-size:14px;font-weight:700}
+.card-title{font-size:15px;font-weight:700;line-height:1.3;margin-bottom:4px}
+.card-meta{display:flex;gap:12px;font-size:11px;color:var(--muted)}
+.card-overdue-tag{font-size:11px;color:var(--red);font-weight:600}
+.card-status{margin-top:8px}
+.card-status select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:var(--white);color:var(--ink)}
+
+.view{display:none}.view.on{display:block}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:6px 0 env(safe-area-inset-bottom,6px)}
+.bnav-inner{display:flex;justify-content:space-around}
+.ni{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:500;color:var(--muted);padding:6px 14px;position:relative;text-decoration:none}
+.ni.on{color:var(--green)}
+.ni svg{width:20px;height:20px}
+.ni-badge{position:absolute;top:2px;right:6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:100px}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">mm<span>labs</span></div>
+  <div class="hdr-r"><span>Илья Ф.</span><button>Выйти</button></div>
+</div>
+<div class="main">
+  <h1>Мои задачи</h1>
+
+  <div class="summary">
+    <div class="sum"><div class="l">В работе</div><div class="v">₽8.3M</div></div>
+    <div class="sum"><div class="l">Просрочено</div><div class="v red">₽5.2M</div></div>
+    <div class="sum"><div class="l">Решено</div><div class="v green">₽2.1M</div></div>
+    <div class="sum"><div class="l">Всего задач</div><div class="v">5</div></div>
+  </div>
+
+  <div class="overdue-banner">
+    <span class="overdue-dot"></span>
+    2 задачи просрочены на ₽5.2M
+  </div>
+
+  <div class="controls">
+    <div class="tabs">
+      <button class="tab on" onclick="stab(this,'all')">Все</button>
+      <button class="tab" onclick="stab(this,'progress')">В работе<span class="tab-badge">2</span></button>
+      <button class="tab" onclick="stab(this,'done')">Решены</button>
+      <button class="tab" onclick="stab(this,'dismissed')">Отклонены</button>
+    </div>
+    <div class="view-toggle">
+      <button class="vt" onclick="setView('table',this)" title="Таблица"><svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <button class="vt on" onclick="setView('cards',this)" title="Карточки"><svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/></svg></button>
+    </div>
+  </div>
+
+  <!-- TABLE VIEW -->
+  <div class="view" id="v-table">
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Задача</th><th>Сумма</th><th>Срок</th><th>Статус</th></tr></thead>
+      <tbody>
+        <tr class="row-overdue"><td><div class="t-title">ООО «Вектор» — 38% дебиторки</div><div class="t-sub">Концентрация ДЗ</div></td><td class="t-amount red">₽4.5M</td><td class="t-date t-overdue">3 апр (просрочена)</td><td><span class="t-status st-progress">В работе</span></td></tr>
+        <tr class="row-overdue"><td><div class="t-title">Герметик — 90+ дней без продаж</div><div class="t-sub">Неликвид на складе</div></td><td class="t-amount red">₽1.82M</td><td class="t-date t-overdue">5 апр (просрочена)</td><td><span class="t-status st-stuck">Зависла</span></td></tr>
+        <tr><td><div class="t-title">ИП Соколов — просрочка 2 мес.</div><div class="t-sub">Просроченная ДЗ</div></td><td class="t-amount">₽840K</td><td class="t-date">17 апр</td><td><span class="t-status st-progress">В работе</span></td></tr>
+        <tr><td><div class="t-title">Дисбаланс отсрочек 52/34 дн.</div><div class="t-sub">Платёжные циклы</div></td><td class="t-amount">₽1.1M</td><td class="t-date">20 апр</td><td><span class="t-status st-done">Решена</span></td></tr>
+        <tr><td><div class="t-title">КЗ-1 — аванс ООО «Поставка»</div><div class="t-sub">Незакрытый аванс</div></td><td class="t-amount">₽520K</td><td class="t-date">—</td><td><span class="t-status st-dismissed">Отклонена</span></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- CARD VIEW -->
+  <div class="view on" id="v-cards">
+    <div class="cards">
+      <div class="card overdue">
+        <div class="card-top"><span class="card-sev sev-c">Критично</span><span class="card-amount" style="color:var(--red)">₽4.5M</span></div>
+        <div class="card-title">ООО «Вектор» — 38% дебиторки</div>
+        <div class="card-meta"><span>Взята 1 апр</span><span class="card-overdue-tag">Просрочена 7 дней</span></div>
+        <div class="card-status"><select><option selected>В работе</option><option>Решена</option><option>Зависла</option><option>Отклонена</option></select></div>
+      </div>
+      <div class="card overdue">
+        <div class="card-top"><span class="card-sev sev-h">Высокий</span><span class="card-amount" style="color:var(--red)">₽1.82M</span></div>
+        <div class="card-title">Герметик — 90+ дней без продаж</div>
+        <div class="card-meta"><span>Взята 2 апр</span><span class="card-overdue-tag">Просрочена 5 дней</span></div>
+        <div class="card-status"><select><option>В работе</option><option>Решена</option><option selected>Зависла</option><option>Отклонена</option></select></div>
+      </div>
+      <div class="card">
+        <div class="card-top"><span class="card-sev sev-h">Высокий</span><span class="card-amount">₽840K</span></div>
+        <div class="card-title">ИП Соколов — просрочка 2 мес.</div>
+        <div class="card-meta"><span>Взята 8 апр</span><span>Срок: 17 апр</span></div>
+        <div class="card-status"><select><option selected>В работе</option><option>Решена</option><option>Зависла</option><option>Отклонена</option></select></div>
+      </div>
+      <div class="card">
+        <div class="card-top"><span class="card-sev sev-m">Средний</span><span class="card-amount" style="color:var(--green)">₽1.1M</span></div>
+        <div class="card-title">Дисбаланс отсрочек 52/34 дн.</div>
+        <div class="card-meta"><span>Решена 10 апр</span></div>
+        <div class="card-status"><select><option>В работе</option><option selected>Решена</option><option>Зависла</option><option>Отклонена</option></select></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bnav"><div class="bnav-inner">
+  <a class="ni" href="#"><svg viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 7h16" stroke="currentColor" stroke-width="1.5"/></svg>Входящие<span class="ni-badge">7</span></a>
+  <a class="ni on" href="#"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Задачи<span class="ni-badge" style="background:var(--red)">2</span></a>
+  <a class="ni" href="#"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 6h6M7 10h6M7 14h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Данные</a>
+</div></div>
+
+<script>
+function stab(el,f){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');}
+function setView(v,el){document.querySelectorAll('.vt').forEach(b=>b.classList.remove('on'));el.classList.add('on');document.querySelectorAll('.view').forEach(d=>d.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');}
+</script>
+</body>
+</html>

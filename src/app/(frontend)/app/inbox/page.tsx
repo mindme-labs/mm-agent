@@ -7,7 +7,7 @@ import { InboxFeed } from '@/components/InboxFeed'
 
 export default async function InboxPage() {
   const user = await getCurrentUser()
-  if (!user) redirect('/auth')
+  if (!user) redirect('/auth/login')
   if (!user.hasCompletedOnboarding) redirect('/app/onboarding')
 
   const payload = await getPayload({ config })

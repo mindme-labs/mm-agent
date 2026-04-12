@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mmlabs — Регистрация (Mobile)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F8F7F4;--white:#FFF;--ink:#141414;--ink2:#3D3D3D;--muted:#888680;--border:#E0DDD6;--green:#0F7B5C;--green-bg:#ECF6F2;--red:#C0392B}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100dvh;max-width:430px;margin:0 auto}
+
+.top{padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:17px;font-weight:700}.logo span{color:var(--green)}
+.back{font-size:13px;color:var(--muted);text-decoration:none}
+
+.body{padding:0 20px 40px}
+.invite{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--green);background:var(--green-bg);padding:4px 12px;border-radius:100px;border:1px solid rgba(15,123,92,.18);margin-bottom:16px}
+h1{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+.sub{font-size:15px;color:var(--ink2);line-height:1.55;margin-bottom:24px}
+
+.tabs{display:flex;gap:2px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:3px;margin-bottom:24px}
+.tab{flex:1;padding:10px;text-align:center;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--muted);border:none;background:none;font-family:inherit}
+.tab.on{background:var(--ink);color:#fff}
+
+.field{margin-bottom:18px}
+.field label{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
+.field input{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;font-size:16px;font-family:inherit;background:var(--white);outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--green)}
+.field input::placeholder{color:var(--muted)}
+.hint{font-size:12px;color:var(--muted);margin-top:5px}
+
+.btn{width:100%;padding:16px;border-radius:10px;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;border:none;background:var(--green);color:#fff;margin-top:4px}
+.footer{text-align:center;margin-top:20px;font-size:14px;color:var(--muted)}
+.footer a{color:var(--green);text-decoration:none;font-weight:500}
+
+.view{display:none}.view.on{display:block}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">mm<span>labs</span></div>
+  <a href="/" class="back">← Назад</a>
+</div>
+<div class="body">
+  <div class="tabs">
+    <button class="tab on" onclick="sw('reg')">Регистрация</button>
+    <button class="tab" onclick="sw('log')">Вход</button>
+  </div>
+
+  <div class="view on" id="v-reg">
+    <div class="invite">Код: DEMO2025</div>
+    <h1>Создайте аккаунт</h1>
+    <p class="sub">7 дней бесплатного анализа данных из вашей 1С.</p>
+    <div class="field"><label>Имя</label><input type="text" placeholder="Как к вам обращаться"></div>
+    <div class="field"><label>Email</label><input type="email" placeholder="your@company.ru" inputmode="email"></div>
+    <div class="field"><label>Пароль</label><input type="password" placeholder="Минимум 8 символов" autocomplete="new-password"><div class="hint">Латинские буквы, цифры, спецсимволы</div></div>
+    <button class="btn">Создать аккаунт</button>
+    <div class="footer">Нажимая кнопку, вы принимаете<br><a href="#">условия использования</a></div>
+  </div>
+
+  <div class="view" id="v-log">
+    <h1>Вход</h1>
+    <p class="sub">Email и пароль, указанные при регистрации.</p>
+    <div class="field"><label>Email</label><input type="email" placeholder="your@company.ru" inputmode="email"></div>
+    <div class="field"><label>Пароль</label><input type="password" placeholder="Ваш пароль"><div class="hint"><a href="#" style="color:var(--green);text-decoration:none">Забыли пароль?</a></div></div>
+    <button class="btn">Войти</button>
+    <div class="footer">Нет аккаунта? <a href="#" onclick="sw('reg');return false">Зарегистрироваться</a></div>
+  </div>
+</div>
+<script>
+function sw(t){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('v-'+t).classList.add('on');
+  document.querySelector(`.tab[onclick*="${t}"]`).classList.add('on');
+}
+</script>
+</body>
+</html>

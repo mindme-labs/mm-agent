@@ -14,6 +14,8 @@ import { AnalysisResults } from './collections/AnalysisResults'
 import { AIPrompts } from './collections/AIPrompts'
 import { AIUsageLogs } from './collections/AIUsageLogs'
 import { EventLog } from './collections/EventLog'
+import { InviteCodes } from './collections/InviteCodes'
+import { AccessRequests } from './collections/AccessRequests'
 import { GlobalSettings } from './globals/GlobalSettings'
 
 const filename = fileURLToPath(import.meta.url)
@@ -42,6 +44,8 @@ export default buildConfig({
     AIPrompts,
     AIUsageLogs,
     EventLog,
+    InviteCodes,
+    AccessRequests,
   ],
   globals: [GlobalSettings],
   editor: lexicalEditor(),

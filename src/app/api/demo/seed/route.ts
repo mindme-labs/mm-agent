@@ -9,15 +9,11 @@ export async function POST() {
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
-    if (user.mode !== 'demo') {
-      return NextResponse.json({ error: 'Only available in demo mode' }, { status: 403 })
-    }
-
     const count = await seedDemoForUser(user.id)
 
     await logEvent(user.id, 'onboarding.analysis_complete', undefined, undefined, {
       recommendationCount: count,
-      mode: 'demo',
+      mode: user.mode,
     })
 
     return NextResponse.json({ ok: true, recommendationCount: count })

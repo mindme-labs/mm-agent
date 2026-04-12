@@ -5,7 +5,9 @@ export const Users: CollectionConfig = {
   admin: {
     useAsTitle: 'email',
   },
-  auth: true,
+  auth: {
+    tokenExpiration: 60 * 60 * 24 * 30, // 30 days
+  },
   access: {
     read: ({ req: { user } }) => {
       if (!user) return false
@@ -17,30 +19,10 @@ export const Users: CollectionConfig = {
       if (user.role === 'admin') return true
       return { id: { equals: user.id } }
     },
-    create: ({ req: { user } }) => {
-      if (!user) return true // allow creation during OAuth
-      return user.role === 'admin'
-    },
+    create: () => true,
     delete: ({ req: { user } }) => {
       return user?.role === 'admin'
     },
-  },
-  hooks: {
-    beforeChange: [
-      ({ data, operation }) => {
-        if (
-          (operation === 'create' || operation === 'update') &&
-          (data?.mode === 'preprod' || data?.mode === 'production')
-        ) {
-          if (!process.env.ANTHROPIC_API_KEY) {
-            throw new Error(
-              'Для пре-прод режима необходимо настроить ANTHROPIC_API_KEY',
-            )
-          }
-        }
-        return data
-      },
-    ],
   },
   fields: [
     {
@@ -64,11 +46,11 @@ export const Users: CollectionConfig = {
       type: 'select',
       label: 'Режим',
       required: true,
-      defaultValue: 'demo',
+      defaultValue: 'trial',
       options: [
-        { label: 'Демо', value: 'demo' },
-        { label: 'Пре-прод', value: 'preprod' },
-        { label: 'Продакшн', value: 'production' },
+        { label: 'Триал', value: 'trial' },
+        { label: 'Полный', value: 'full' },
+        { label: 'Истёк', value: 'expired' },
       ],
     },
     {
@@ -76,6 +58,28 @@ export const Users: CollectionConfig = {
       type: 'checkbox',
       label: 'Прошёл онбординг',
       defaultValue: false,
+    },
+    {
+      name: 'trialExpiresAt',
+      type: 'date',
+      label: 'Триал истекает',
+    },
+    {
+      name: 'analysisStatus',
+      type: 'select',
+      label: 'Статус анализа',
+      options: [
+        { label: 'Нет', value: 'none' },
+        { label: 'В процессе', value: 'processing' },
+        { label: 'Готов', value: 'complete' },
+        { label: 'Ошибка', value: 'error' },
+      ],
+      defaultValue: 'none',
+    },
+    {
+      name: 'inviteCode',
+      type: 'text',
+      label: 'Инвайт-код',
     },
     {
       name: 'companyName',

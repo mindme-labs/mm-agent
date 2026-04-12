@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mmlabs — Стартовый экран (Mobile)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F8F7F4;--white:#FFF;--ink:#141414;--ink2:#3D3D3D;--muted:#888680;--border:#E0DDD6;--green:#0F7B5C;--green-bg:#ECF6F2;--red:#C0392B;--red-bg:#FDF0EE;--amber:#B45309;--amber-bg:#FEF3C7}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;max-width:430px;margin:0 auto}
+
+.header{background:var(--white);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:16px;font-weight:700}.logo span{color:var(--green)}
+.hdr-r{display:flex;align-items:center;gap:10px}
+.hdr-r span{font-size:13px;color:var(--muted)}
+.hdr-r button{font-size:12px;color:var(--muted);background:none;border:1px solid var(--border);padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit}
+
+.main{padding:20px 20px 100px}
+
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--green);background:var(--green-bg);padding:4px 10px;border-radius:100px;border:1px solid rgba(15,123,92,.18);margin-bottom:12px}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green)}
+h1{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin-bottom:8px}
+.intro{font-size:15px;color:var(--ink2);line-height:1.55;margin-bottom:28px}
+
+/* CAROUSEL */
+.car-label{font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.car-track{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+.car-track::-webkit-scrollbar{display:none}
+.cc{min-width:220px;max-width:260px;flex-shrink:0;scroll-snap-align:start;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px}
+.cc-n{width:24px;height:24px;border-radius:6px;background:var(--green-bg);color:var(--green);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:8px;border:1px solid rgba(15,123,92,.12)}
+.cc h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.cc p{font-size:12px;color:var(--ink2);line-height:1.5}
+.cc .mini{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-top:8px}
+.mini-pill{font-size:9px;font-weight:700;padding:2px 5px;border-radius:100px;background:var(--red-bg);color:var(--red);margin-bottom:2px;display:inline-block}
+.mini-t{font-size:11px;font-weight:600}
+.mini-s{font-size:10px;color:var(--muted)}
+.car-dots{display:flex;gap:5px;justify-content:center;margin-top:10px;margin-bottom:28px}
+.car-dots span{width:5px;height:5px;border-radius:50%;background:var(--border)}
+.car-dots span.on{background:var(--green)}
+
+/* UPLOAD */
+.up-label{font-size:16px;font-weight:700;margin-bottom:4px}
+.up-sub{font-size:14px;color:var(--ink2);margin-bottom:12px}
+.drop{background:var(--white);border:2px dashed var(--border);border-radius:12px;padding:32px 16px;text-align:center;cursor:pointer;transition:border-color .2s}
+.drop:active{border-color:var(--green);background:var(--green-bg)}
+.drop h3{font-size:15px;font-weight:700;margin:10px 0 4px}
+.drop p{font-size:13px;color:var(--muted);margin-bottom:12px}
+.pick{display:inline-flex;align-items:center;gap:5px;background:var(--green);color:#fff;border:none;padding:12px 22px;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}
+.drop-h{font-size:11px;color:var(--muted);margin-top:8px}
+
+.flist{margin-top:12px}
+.fi{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--white);border:1px solid var(--border);border-radius:8px;margin-bottom:5px}
+.fi-ico{width:28px;height:28px;border-radius:6px;background:var(--green-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fi-info{flex:1;min-width:0}
+.fi-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fi-sz{font-size:10px;color:var(--muted)}
+.fi-st{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px;background:var(--green-bg);color:var(--green);flex-shrink:0}
+
+.go{width:100%;padding:15px;border-radius:10px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;border:none;background:var(--green);color:#fff;margin-top:12px}
+.go:disabled{background:var(--border);color:var(--muted);cursor:default}
+
+/* ACCOUNTS */
+.accs{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-top:16px}
+.accs summary{font-size:13px;font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+.accs summary::after{content:'+';font-size:16px;color:var(--muted)}
+.accs[open] summary::after{content:'−'}
+.acc-g{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px}
+.acc-i{font-size:11px;color:var(--ink2);padding:4px 7px;background:var(--bg);border-radius:4px;display:flex;gap:4px}
+.acc-i b{color:var(--green);font-weight:600;min-width:38px}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:6px 0 env(safe-area-inset-bottom,6px)}
+.bnav-inner{display:flex;justify-content:space-around}
+.ni{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:500;color:var(--muted);padding:6px 14px;opacity:.4}
+.ni svg{width:20px;height:20px}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">mm<span>labs</span></div>
+  <div class="hdr-r"><span>Илья Ф.</span><button>Выйти</button></div>
+</div>
+
+<div class="main">
+  <div class="badge">Триал · 7 дней</div>
+  <h1>Добро пожаловать, Илья!</h1>
+  <p class="intro">Загрузите данные из 1С — через минуту получите рекомендации по оборотному капиталу.</p>
+
+  <div class="car-label">Как это работает</div>
+  <div class="car-track">
+    <div class="cc"><div class="cc-n">1</div><h3>Выгрузите ОСВ</h3><p>Стандартные ведомости в CSV. 2 минуты в любой версии 1С.</p></div>
+    <div class="cc"><div class="cc-n">2</div><h3>AI анализирует</h3><p>9 типов проверок за 30–60 секунд.</p></div>
+    <div class="cc"><div class="cc-n">3</div><h3>Рекомендации</h3><p>Действия с суммами и эффектом.</p>
+      <div class="mini"><span class="mini-pill">Критично</span><div class="mini-t">ООО «Вектор» — 38% ДЗ</div><div class="mini-s">₽4.5M под риском</div></div>
+    </div>
+    <div class="cc"><div class="cc-n">4</div><h3>Действуйте</h3><p>Готовые тексты писем. Скопировать — отправить.</p></div>
+  </div>
+  <div class="car-dots"><span class="on"></span><span></span><span></span><span></span></div>
+
+  <div class="up-label">Загрузите файлы</div>
+  <div class="up-sub">ОСВ из 1С:Бухгалтерии в CSV</div>
+  <div class="drop" onclick="document.getElementById('fi').click()">
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="var(--green-bg)"/><path d="M16 10v12M10 16l6-6 6 6" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h3>Выберите файлы</h3>
+    <p>или перетащите сюда</p>
+    <button class="pick">Выбрать файлы</button>
+    <input type="file" id="fi" accept=".csv,.xlsx" multiple style="display:none" onchange="add(this.files)">
+    <div class="drop-h">CSV / Excel · до 10 файлов · до 10 Мб</div>
+  </div>
+
+  <div class="flist" id="fl"></div>
+  <button class="go" id="go" disabled>Начать анализ</button>
+
+  <details class="accs">
+    <summary>Какие счета загрузить?</summary>
+    <div class="acc-g">
+      <div class="acc-i"><b>сч.10</b>Материалы</div>
+      <div class="acc-i"><b>сч.41</b>Товары</div>
+      <div class="acc-i"><b>сч.45</b>Отгруженные</div>
+      <div class="acc-i"><b>сч.60</b>Поставщики</div>
+      <div class="acc-i"><b>сч.62</b>Покупатели</div>
+      <div class="acc-i"><b>90.01</b>Выручка</div>
+      <div class="acc-i"><b>90.02</b>Себестоимость</div>
+    </div>
+  </details>
+</div>
+
+<div class="bnav"><div class="bnav-inner">
+  <div class="ni"><svg viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 7h16" stroke="currentColor" stroke-width="1.5"/></svg>Входящие</div>
+  <div class="ni"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Задачи</div>
+  <div class="ni"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 6h6M7 10h6M7 14h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Данные</div>
+</div></div>
+
+<script>
+function add(fl){
+  const list=document.getElementById('fl');
+  for(const f of fl){
+    const d=document.createElement('div');d.className='fi';
+    d.innerHTML=`<div class="fi-ico"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 1h5.5L13 5v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z" stroke="var(--green)" stroke-width="1.3" fill="none"/></svg></div><div class="fi-info"><div class="fi-name">${f.name}</div><div class="fi-sz">${(f.size/1024).toFixed(0)} КБ</div></div><span class="fi-st">Готов</span>`;
+    list.appendChild(d);
+  }
+  document.getElementById('go').disabled=false;
+}
+</script>
+</body>
+</html>
