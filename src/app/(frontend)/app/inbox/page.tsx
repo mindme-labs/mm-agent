@@ -48,6 +48,16 @@ export default async function InboxPage() {
     isDemo: doc.isDemo ?? false,
   }))
 
+  // Trial info
+  let trialDaysLeft: number | undefined
+  let trialEndsAt: string | undefined
+  if (user.trialExpiresAt) {
+    const exp = new Date(user.trialExpiresAt as string)
+    const diff = Math.ceil((exp.getTime() - Date.now()) / 86400000)
+    trialDaysLeft = Math.max(0, diff)
+    trialEndsAt = exp.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+  }
+
   return (
     <div className="py-6">
       {analysis && (
@@ -61,10 +71,16 @@ export default async function InboxPage() {
           apTurnoverDays={analysis.apTurnoverDays ?? undefined}
           healthIndex={(analysis.healthIndex as 'fine' | 'issues' | 'risky') ?? undefined}
           period={analysis.period ?? undefined}
+          trialDaysLeft={trialDaysLeft}
+          trialEndsAt={trialEndsAt}
         />
       )}
 
-      <h2 className="mb-4 text-lg font-semibold text-slate-900">Рекомендации</h2>
+      <div className="mb-5">
+        <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--mm-muted)' }}>
+          Требуют внимания — {recs.length} {recs.length === 1 ? 'ситуация' : recs.length < 5 ? 'ситуации' : 'ситуаций'}
+        </h2>
+      </div>
 
       <InboxFeed initialRecs={recs} />
     </div>

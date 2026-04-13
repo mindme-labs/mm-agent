@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { RecommendationCard } from './RecommendationCard'
-import { CheckCircle2 } from 'lucide-react'
 
 interface Rec {
   id: string
@@ -30,16 +29,25 @@ export function InboxFeed({ initialRecs }: { initialRecs: Rec[] }) {
 
   if (recs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <CheckCircle2 className="mb-3 h-12 w-12 text-green-400" />
-        <p className="text-lg font-medium text-slate-700">Все рекомендации обработаны</p>
-        <p className="mt-1 text-sm text-slate-400">Новые появятся после следующего анализа данных</p>
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full"
+          style={{ background: 'var(--mm-green-bg)' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M7 13l3 3 7-7" stroke="var(--mm-green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <p className="text-base font-semibold" style={{ color: 'var(--mm-ink)' }}>
+          Все рекомендации обработаны
+        </p>
+        <p className="mt-1 text-sm" style={{ color: 'var(--mm-muted)' }}>
+          Новые появятся после следующего анализа данных
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div className="flex flex-col gap-4">
       {recs.map((rec) => (
         <RecommendationCard
           key={rec.id}

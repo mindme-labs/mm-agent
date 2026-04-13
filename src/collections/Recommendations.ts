@@ -142,5 +142,17 @@ export const Recommendations: CollectionConfig = {
       label: 'Сгенерировано AI',
       defaultValue: false,
     },
+    {
+      name: 'takenAt',
+      type: 'date',
+      label: 'Взята в работу',
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'dueDate',
+      type: 'date',
+      label: 'Срок',
+      admin: { position: 'sidebar' },
+    },
   ],
 }

@@ -1,14 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, Check } from 'lucide-react'
 
 interface CopyDraftButtonProps {
   text: string
   onCopy?: () => void
+  variant?: 'default' | 'link'
+  label?: string
 }
 
-export function CopyDraftButton({ text, onCopy }: CopyDraftButtonProps) {
+export function CopyDraftButton({ text, onCopy, variant = 'default', label }: CopyDraftButtonProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -27,22 +28,26 @@ export function CopyDraftButton({ text, onCopy }: CopyDraftButtonProps) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  if (variant === 'link') {
+    return (
+      <button
+        onClick={handleCopy}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          fontSize: 13, fontWeight: 500, fontFamily: 'inherit',
+          color: copied ? 'var(--mm-green)' : 'var(--mm-green)',
+        }}>
+        {copied ? 'Скопировано' : (label ?? 'Скопировать текст оффера')}
+      </button>
+    )
+  }
+
   return (
     <button
       onClick={handleCopy}
-      className="flex min-h-[44px] items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
-    >
-      {copied ? (
-        <>
-          <Check className="h-4 w-4 text-green-600" />
-          <span className="text-green-600">Скопировано</span>
-        </>
-      ) : (
-        <>
-          <Copy className="h-4 w-4" />
-          <span>Скопировать текст для отправки</span>
-        </>
-      )}
+      className="flex min-h-[44px] items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors"
+      style={{ color: copied ? 'var(--mm-green)' : 'var(--mm-muted)', background: 'var(--mm-bg)', border: '1px solid var(--mm-border)', fontFamily: 'inherit', cursor: 'pointer' }}>
+      {copied ? '✓ Скопировано' : (label ?? 'Скопировать текст для отправки')}
     </button>
   )
 }

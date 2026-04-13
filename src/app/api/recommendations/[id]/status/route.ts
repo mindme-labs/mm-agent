@@ -28,10 +28,20 @@ export async function PATCH(
     }
 
     const oldStatus = rec.status
+    const updateData: Record<string, unknown> = { status }
+
+    if (status === 'in_progress' && oldStatus !== 'in_progress') {
+      const now = new Date()
+      updateData.takenAt = now.toISOString()
+      const due = new Date(now)
+      due.setDate(due.getDate() + 14)
+      updateData.dueDate = due.toISOString()
+    }
+
     const updated = await payload.update({
       collection: 'recommendations',
       id,
-      data: { status },
+      data: updateData,
     })
 
     await logEvent(user.id, 'recommendation.status_changed', 'recommendation', id, {
