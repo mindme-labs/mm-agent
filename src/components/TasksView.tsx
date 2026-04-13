@@ -155,23 +155,23 @@ export function TasksView({ initialTasks }: { initialTasks: Task[] }) {
                 { key: 'resolved', label: 'Решены' },
                 { key: 'stuck', label: 'Зависли' },
                 { key: 'dismissed', label: 'Отклонены' },
-              ] as const).map(({ key, label, badge }) => (
+              ] as const).map((item) => (
                 <button
                   key={key}
-                  onClick={() => setTab(key as TabFilter)}
+                  onClick={() => setTab(item.key as TabFilter)}
                   className="relative rounded-md px-3 py-2 text-xs font-semibold transition-colors"
                   style={{
-                    background: tab === key ? 'var(--mm-ink)' : 'none',
-                    color: tab === key ? '#fff' : 'var(--mm-muted)',
+                    background: tab === item.key ? 'var(--mm-ink)' : 'none',
+                    color: tab === item.key ? '#fff' : 'var(--mm-muted)',
                     border: 'none',
                     cursor: 'pointer',
                     fontFamily: 'inherit',
                   }}>
-                  {label}
-                  {badge != null && badge > 0 && (
+                  {item.label}
+                  {'badge' in item && item.badge > 0 && (
                     <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold text-white"
                       style={{ background: 'var(--mm-red)' }}>
-                      {badge}
+                      {item.badge}
                     </span>
                   )}
                 </button>
