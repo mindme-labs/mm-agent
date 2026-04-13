@@ -154,5 +154,11 @@ export const Recommendations: CollectionConfig = {
       label: 'Срок',
       admin: { position: 'sidebar' },
     },
+    {
+      name: 'resolvedAt',
+      type: 'date',
+      label: 'Дата решения',
+      admin: { position: 'sidebar' },
+    },
   ],
 }

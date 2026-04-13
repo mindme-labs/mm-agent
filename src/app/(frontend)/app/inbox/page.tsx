@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { FinancialSummaryPanel } from '@/components/FinancialSummaryPanel'
 import { InboxFeed } from '@/components/InboxFeed'
+import { TasksSummaryBanner } from '@/components/TasksSummaryBanner'
 
 export default async function InboxPage() {
   const user = await getCurrentUser()
@@ -11,8 +12,9 @@ export default async function InboxPage() {
   if (!user.hasCompletedOnboarding) redirect('/app/onboarding')
 
   const payload = await getPayload({ config })
+  const now = new Date()
 
-  const [analysisResult, recommendations] = await Promise.all([
+  const [analysisResult, recommendations, activeTasks] = await Promise.all([
     payload.find({
       collection: 'analysis-results',
       where: { owner: { equals: user.id } },
@@ -27,6 +29,14 @@ export default async function InboxPage() {
       },
       sort: 'priority',
       limit: 50,
+    }),
+    payload.find({
+      collection: 'recommendations',
+      where: {
+        owner: { equals: user.id },
+        status: { in: ['in_progress', 'stuck'] },
+      },
+      limit: 200,
     }),
   ])
 
@@ -47,6 +57,16 @@ export default async function InboxPage() {
     isAiGenerated: doc.isAiGenerated ?? false,
     isDemo: doc.isDemo ?? false,
   }))
+
+  const inProgressTasks = activeTasks.docs
+  const inProgressCount = inProgressTasks.length
+  const inProgressAmount = inProgressTasks.reduce((s, t) => s + ((t.impactAmount as number) ?? 0), 0)
+
+  const overdueTasks = inProgressTasks.filter(
+    (t) => t.dueDate && new Date(t.dueDate as string) < now
+  )
+  const overdueCount = overdueTasks.length
+  const overdueAmount = overdueTasks.reduce((s, t) => s + ((t.impactAmount as number) ?? 0), 0)
 
   // Trial info
   let trialDaysLeft: number | undefined
@@ -73,6 +93,15 @@ export default async function InboxPage() {
           period={analysis.period ?? undefined}
           trialDaysLeft={trialDaysLeft}
           trialEndsAt={trialEndsAt}
+        />
+      )}
+
+      {inProgressCount > 0 && (
+        <TasksSummaryBanner
+          inProgressCount={inProgressCount}
+          inProgressAmount={inProgressAmount}
+          overdueCount={overdueCount}
+          overdueAmount={overdueAmount}
         />
       )}
 

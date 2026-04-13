@@ -34,8 +34,12 @@ export async function PATCH(
       const now = new Date()
       updateData.takenAt = now.toISOString()
       const due = new Date(now)
-      due.setDate(due.getDate() + 14)
+      due.setDate(due.getDate() + 7)
       updateData.dueDate = due.toISOString()
+    }
+
+    if (status === 'resolved' && oldStatus !== 'resolved') {
+      updateData.resolvedAt = new Date().toISOString()
     }
 
     const updated = await payload.update({
