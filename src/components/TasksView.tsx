@@ -89,24 +89,28 @@ export function TasksView({ initialTasks }: { initialTasks: Task[] }) {
     }
   }
 
+  const TABS = [
+    { key: 'all' as const, label: 'Все' },
+    { key: 'in_progress' as const, label: 'В работе', badge: inProgressCount },
+    { key: 'resolved' as const, label: 'Решены' },
+    { key: 'stuck' as const, label: 'Зависли' },
+    { key: 'dismissed' as const, label: 'Отклонены' },
+  ]
+
   return (
     <div className="py-6">
-      {/* Summary strip */}
-      <h1 className="mb-5 text-2xl font-extrabold tracking-tight lg:text-3xl" style={{ color: 'var(--mm-ink)', letterSpacing: '-.02em' }}>
-        Мои задачи
-      </h1>
-
-      <div className="mb-5 flex gap-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+      {/* Summary cards — matching Inbox card style */}
+      <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           { label: 'В работе', value: formatAmount(inProgressAmount), color: undefined },
           { label: 'Просрочено', value: formatAmount(overdueAmount), color: 'var(--mm-red)' },
           { label: 'Решено', value: formatAmount(resolvedAmount), color: 'var(--mm-green)' },
           { label: 'Всего задач', value: String(tasks.length), color: undefined },
         ].map(({ label, value, color }) => (
-          <div key={label} className="min-w-[130px] shrink-0 rounded-xl border px-5 py-4"
+          <div key={label} className="rounded-xl border px-5 py-5"
             style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
-            <div className="mb-1 text-xs font-medium" style={{ color: 'var(--mm-muted)' }}>{label}</div>
-            <div className="text-2xl font-extrabold leading-none tracking-tight"
+            <div className="mb-1.5 text-xs font-medium" style={{ color: 'var(--mm-muted)' }}>{label}</div>
+            <div className="text-2xl font-extrabold leading-none tracking-tight lg:text-[28px]"
               style={{ color: color ?? 'var(--mm-ink)', letterSpacing: '-.02em' }}>
               {value}
             </div>
@@ -116,7 +120,7 @@ export function TasksView({ initialTasks }: { initialTasks: Task[] }) {
 
       {/* Overdue banner */}
       {overdueCount > 0 && (
-        <div className="mb-5 flex items-center gap-2.5 rounded-xl border px-5 py-3 text-sm font-medium"
+        <div className="mb-6 flex items-center gap-2.5 rounded-xl border px-5 py-3.5 text-sm font-medium"
           style={{ background: 'var(--mm-red-bg)', borderColor: 'rgba(192,57,43,.1)', color: 'var(--mm-red)' }}>
           <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: 'var(--mm-red)' }} />
           {overdueCount} {overdueCount === 1 ? 'задача просрочена' : 'задачи просрочены'} на общую сумму {formatAmount(overdueAmount)}
@@ -138,31 +142,27 @@ export function TasksView({ initialTasks }: { initialTasks: Task[] }) {
         </div>
       ) : (
         <>
-          {/* Controls */}
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex gap-0.5 rounded-lg border p-0.5"
-              style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
-              {([
-                { key: 'all', label: 'Все' },
-                { key: 'in_progress', label: 'В работе', badge: inProgressCount },
-                { key: 'resolved', label: 'Решены' },
-                { key: 'stuck', label: 'Зависли' },
-                { key: 'dismissed', label: 'Отклонены' },
-              ] as const).map((item) => (
+          {/* Controls row */}
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            {/* Filter tabs */}
+            <div className="flex gap-1 overflow-x-auto rounded-xl border p-1"
+              style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)', scrollbarWidth: 'none' }}>
+              {TABS.map((item) => (
                 <button
                   key={item.key}
-                  onClick={() => setTab(item.key as TabFilter)}
-                  className="relative rounded-md px-3 py-2 text-xs font-semibold transition-colors"
+                  onClick={() => setTab(item.key)}
+                  className="relative shrink-0 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors"
                   style={{
-                    background: tab === item.key ? 'var(--mm-ink)' : 'none',
+                    background: tab === item.key ? 'var(--mm-ink)' : 'transparent',
                     color: tab === item.key ? '#fff' : 'var(--mm-muted)',
                     border: 'none',
                     cursor: 'pointer',
                     fontFamily: 'inherit',
+                    whiteSpace: 'nowrap',
                   }}>
                   {item.label}
-                  {'badge' in item && item.badge > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold text-white"
+                  {'badge' in item && (item.badge ?? 0) > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
                       style={{ background: 'var(--mm-red)' }}>
                       {item.badge}
                     </span>
@@ -171,17 +171,18 @@ export function TasksView({ initialTasks }: { initialTasks: Task[] }) {
               ))}
             </div>
 
-            <div className="flex gap-0.5 rounded-lg border p-0.5"
+            {/* View toggle */}
+            <div className="flex gap-1 rounded-xl border p-1"
               style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
               <button
                 onClick={() => setView('table')}
                 title="Таблица"
-                className="rounded-md px-3 py-2 transition-colors"
+                className="flex items-center gap-1.5 rounded-lg px-3.5 py-2.5 transition-colors"
                 style={{
-                  background: view === 'table' ? 'var(--mm-ink)' : 'none',
+                  background: view === 'table' ? 'var(--mm-ink)' : 'transparent',
                   color: view === 'table' ? '#fff' : 'var(--mm-muted)',
-                  border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-                  fontSize: 13, fontWeight: 500, fontFamily: 'inherit',
+                  border: 'none', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
                 }}>
                 <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
                   <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -191,12 +192,12 @@ export function TasksView({ initialTasks }: { initialTasks: Task[] }) {
               <button
                 onClick={() => setView('cards')}
                 title="Карточки"
-                className="rounded-md px-3 py-2 transition-colors"
+                className="flex items-center gap-1.5 rounded-lg px-3.5 py-2.5 transition-colors"
                 style={{
-                  background: view === 'cards' ? 'var(--mm-ink)' : 'none',
+                  background: view === 'cards' ? 'var(--mm-ink)' : 'transparent',
                   color: view === 'cards' ? '#fff' : 'var(--mm-muted)',
-                  border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-                  fontSize: 13, fontWeight: 500, fontFamily: 'inherit',
+                  border: 'none', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
                 }}>
                 <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
                   <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
@@ -252,7 +253,7 @@ export function TasksView({ initialTasks }: { initialTasks: Task[] }) {
                           onChange={e => updateStatus(task.id, e.target.value)}
                           style={{
                             ...statusStyle(task.status),
-                            fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 100,
+                            fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: 100,
                             border: 'none', cursor: 'pointer', fontFamily: 'inherit', appearance: 'none',
                           }}>
                           {STATUS_SELECT_OPTIONS.map(o => (
@@ -299,7 +300,7 @@ export function TasksView({ initialTasks }: { initialTasks: Task[] }) {
                   <select
                     value={task.status}
                     onChange={e => updateStatus(task.id, e.target.value)}
-                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                    className="w-full rounded-lg border px-3 py-2.5 text-sm"
                     style={{ borderColor: 'var(--mm-border)', background: 'var(--mm-white)', color: 'var(--mm-ink)', fontFamily: 'inherit', cursor: 'pointer' }}>
                     {STATUS_SELECT_OPTIONS.map(o => (
                       <option key={o.value} value={o.value}>{o.label}</option>

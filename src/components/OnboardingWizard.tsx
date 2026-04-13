@@ -371,12 +371,9 @@ function AnalysisScreen({ onComplete, onCancel }: AnalysisScreenProps) {
     run()
   }, [])
 
-  useEffect(() => {
-    if (done) {
-      const t = setTimeout(() => onComplete(recommendationCount), 800)
-      return () => clearTimeout(t)
-    }
-  }, [done, recommendationCount, onComplete])
+  const handleGoToResults = useCallback(() => {
+    onComplete(recommendationCount)
+  }, [onComplete, recommendationCount])
 
   return (
     <div className="flex min-h-dvh" style={{ background: 'var(--mm-bg)' }}>
@@ -449,12 +446,19 @@ function AnalysisScreen({ onComplete, onCancel }: AnalysisScreenProps) {
               </div>
               <h2 className="mb-1.5 text-xl font-extrabold" style={{ color: 'var(--mm-ink)' }}>Анализ завершён</h2>
               <p className="mb-5 text-sm leading-relaxed" style={{ color: 'var(--mm-ink2)' }}>Найдены возможности, требующие вашего внимания.</p>
-              <div className="mb-5 flex justify-center gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-extrabold" style={{ color: 'var(--mm-green)' }}>{recommendationCount}</div>
-                  <div className="text-xs" style={{ color: 'var(--mm-muted)' }}>рекомендаций</div>
+              <div className="mb-6 flex justify-center gap-4">
+                <div className="min-w-[100px] rounded-xl border p-4 text-center"
+                  style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
+                  <div className="text-2xl font-extrabold leading-none" style={{ color: 'var(--mm-green)' }}>{recommendationCount}</div>
+                  <div className="mt-1 text-xs" style={{ color: 'var(--mm-muted)' }}>рекомендаций</div>
                 </div>
               </div>
+              <button
+                onClick={handleGoToResults}
+                className="w-full rounded-xl py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ background: 'var(--mm-green)', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                Перейти к рекомендациям →
+              </button>
             </div>
           )}
         </div>
@@ -554,6 +558,15 @@ function AnalysisScreen({ onComplete, onCancel }: AnalysisScreenProps) {
                   <div className="mt-1.5 text-sm" style={{ color: 'var(--mm-muted)' }}>рекомендаций</div>
                 </div>
               </div>
+              <button
+                onClick={handleGoToResults}
+                className="w-full rounded-xl py-4 text-lg font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ background: 'var(--mm-green)', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                Перейти к рекомендациям →
+              </button>
+              <p className="mt-3 text-sm" style={{ color: 'var(--mm-muted)' }}>
+                Рекомендации с конкретными суммами и готовыми текстами
+              </p>
             </div>
           )}
         </div>

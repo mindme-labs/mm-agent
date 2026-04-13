@@ -1,7 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-
 interface FinancialSummaryProps {
   revenue: number
   accountsReceivable: number
@@ -17,20 +15,21 @@ interface FinancialSummaryProps {
 }
 
 function fmtMln(n: number): string {
-  return `₽${(n / 1_000_000).toFixed(1)} млн`
+  if (n >= 1_000_000) return `₽${(n / 1_000_000).toFixed(1)} млн`
+  if (n >= 1_000) return `₽${Math.round(n / 1_000)} тыс.`
+  return `₽${n}`
 }
 
 const HEALTH_CONFIG = {
-  fine: { label: 'В норме', style: { color: 'var(--mm-green)', background: 'var(--mm-green-bg)' } },
-  issues: { label: 'Есть вопросы', style: { color: 'var(--mm-amber)', background: 'var(--mm-amber-bg)' } },
-  risky: { label: 'Высокий риск', style: { color: 'var(--mm-red)', background: 'var(--mm-red-bg)' } },
+  fine: { label: 'В норме', color: 'var(--mm-green)', bg: 'var(--mm-green-bg)' },
+  issues: { label: 'Есть вопросы', color: 'var(--mm-amber)', bg: 'var(--mm-amber-bg)' },
+  risky: { label: 'Высокий риск', color: 'var(--mm-red)', bg: 'var(--mm-red-bg)' },
 }
 
 export function FinancialSummaryPanel({
   revenue,
   accountsReceivable,
   accountsPayable,
-  newCount,
   grossMargin,
   arTurnoverDays,
   apTurnoverDays,
@@ -39,14 +38,12 @@ export function FinancialSummaryPanel({
   trialDaysLeft,
   trialEndsAt,
 }: FinancialSummaryProps) {
-  const [expanded, setExpanded] = useState(false)
   const health = healthIndex ? HEALTH_CONFIG[healthIndex] : null
 
   return (
     <div className="mb-7">
-      {/* Trial strip */}
       {trialDaysLeft != null && (
-        <div className="mb-8 flex items-center justify-between rounded-xl px-5 py-3 text-sm"
+        <div className="mb-6 flex items-center justify-between rounded-xl px-5 py-3 text-sm"
           style={{ background: 'var(--mm-green-bg)', color: 'var(--mm-green)' }}>
           <span>Триал-доступ · осталось <b className="font-bold">{trialDaysLeft} {trialDaysLeft === 1 ? 'день' : trialDaysLeft < 5 ? 'дня' : 'дней'}</b></span>
           {trialEndsAt && (
@@ -58,65 +55,64 @@ export function FinancialSummaryPanel({
         </div>
       )}
 
-      {/* Summary row — large numbers */}
-      <div className="mb-7 flex flex-wrap items-baseline gap-y-4 border-b pb-7"
-        style={{ borderColor: 'var(--mm-border)' }}>
-        <div className="mr-12">
-          <div className="mb-1 text-sm font-medium" style={{ color: 'var(--mm-muted)' }}>
+      {/* Primary metrics — 3 large cards */}
+      <div className="mb-3 grid grid-cols-3 gap-3">
+        <div className="rounded-xl border px-5 py-5"
+          style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
+          <div className="mb-1.5 text-xs font-medium" style={{ color: 'var(--mm-muted)' }}>
             {period ? `Выручка за ${period}` : 'Выручка'}
           </div>
-          <div className="text-[34px] font-extrabold leading-none tracking-tight" style={{ color: 'var(--mm-ink)', letterSpacing: '-.03em' }}>
+          <div className="text-2xl font-extrabold leading-none tracking-tight lg:text-[28px]"
+            style={{ color: 'var(--mm-ink)', letterSpacing: '-.03em' }}>
             {fmtMln(revenue)}
           </div>
         </div>
-        <div className="mr-12">
-          <div className="mb-1 text-sm font-medium" style={{ color: 'var(--mm-muted)' }}>Вам должны</div>
-          <div className="text-[34px] font-extrabold leading-none tracking-tight"
+        <div className="rounded-xl border px-5 py-5"
+          style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
+          <div className="mb-1.5 text-xs font-medium" style={{ color: 'var(--mm-muted)' }}>Вам должны</div>
+          <div className="text-2xl font-extrabold leading-none tracking-tight lg:text-[28px]"
             style={{ color: 'var(--mm-red)', letterSpacing: '-.03em' }}>
             {fmtMln(accountsReceivable)}
           </div>
         </div>
-        <div className="mr-12">
-          <div className="mb-1 text-sm font-medium" style={{ color: 'var(--mm-muted)' }}>Вы должны</div>
-          <div className="text-[34px] font-extrabold leading-none tracking-tight" style={{ color: 'var(--mm-ink)', letterSpacing: '-.03em' }}>
+        <div className="rounded-xl border px-5 py-5"
+          style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
+          <div className="mb-1.5 text-xs font-medium" style={{ color: 'var(--mm-muted)' }}>Вы должны</div>
+          <div className="text-2xl font-extrabold leading-none tracking-tight lg:text-[28px]"
+            style={{ color: 'var(--mm-ink)', letterSpacing: '-.03em' }}>
             {fmtMln(accountsPayable)}
           </div>
         </div>
+      </div>
 
-        <div className="ml-auto flex gap-8">
-          {(arTurnoverDays != null && apTurnoverDays != null) && (
-            <div className="text-right">
-              <div className="mb-1 text-sm font-medium" style={{ color: 'var(--mm-muted)' }}>Оборач. ДЗ / КЗ</div>
-              <div className="text-xl font-bold" style={{ color: 'var(--mm-ink)' }}>
+      {/* Secondary metrics — smaller cards */}
+      {(arTurnoverDays != null || grossMargin != null) && (
+        <div className="mb-7 grid grid-cols-2 gap-3 lg:grid-cols-3">
+          {arTurnoverDays != null && apTurnoverDays != null && (
+            <div className="rounded-xl border px-5 py-4"
+              style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
+              <div className="mb-1 text-xs font-medium" style={{ color: 'var(--mm-muted)' }}>Оборач. ДЗ / КЗ</div>
+              <div className="text-lg font-bold leading-none" style={{ color: 'var(--mm-ink)' }}>
                 {arTurnoverDays} / {apTurnoverDays} дн.
               </div>
             </div>
           )}
           {grossMargin != null && (
-            <div className="text-right">
-              <div className="mb-1 text-sm font-medium" style={{ color: 'var(--mm-muted)' }}>Рентабельность</div>
-              <div className="text-xl font-bold" style={{ color: 'var(--mm-ink)' }}>
+            <div className="rounded-xl border px-5 py-4"
+              style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
+              <div className="mb-1 text-xs font-medium" style={{ color: 'var(--mm-muted)' }}>Рентабельность</div>
+              <div className="text-lg font-bold leading-none" style={{ color: 'var(--mm-ink)' }}>
                 {grossMargin.toFixed(1)}%
               </div>
               {health && (
-                <div className="mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                  style={health.style}>
+                <div className="mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  style={{ background: health.bg, color: health.color }}>
                   {health.label}
                 </div>
               )}
             </div>
           )}
         </div>
-      </div>
-
-      {/* Mobile expandable details */}
-      {!expanded && (
-        <button
-          onClick={() => setExpanded(true)}
-          className="mb-4 flex items-center gap-1 text-xs font-semibold lg:hidden"
-          style={{ color: 'var(--mm-green)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
-          Подробнее ↓
-        </button>
       )}
     </div>
   )

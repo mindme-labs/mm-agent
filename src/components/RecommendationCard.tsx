@@ -158,21 +158,45 @@ export function RecommendationCard({ recommendation: rec, showActions = true, on
             {rec.fullText && (
               <CopyDraftButton text={rec.fullText} variant="link" />
             )}
-            <div className="ml-auto flex items-center gap-1">
+            <div className="ml-auto flex items-center gap-0.5">
               {feedbackGiven ? (
-                <span className="text-xs font-semibold" style={{ color: 'var(--mm-green)' }}>Спасибо за отзыв</span>
+                <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--mm-green)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M7 13l3 3 7-7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Спасибо
+                </span>
               ) : (
                 <>
-                  <span className="text-xs" style={{ color: 'var(--mm-muted)' }}>Полезно?</span>
-                  {['да', 'нет', 'написать отзыв'].map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => handleFeedback(type)}
-                      className="rounded-md px-2 py-1 text-xs font-medium capitalize transition-colors hover:bg-[var(--mm-green-bg)] hover:text-[var(--mm-green)]"
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--mm-ink2)', fontFamily: 'inherit' }}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => handleFeedback('да')}
+                    title="Полезно"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--mm-green-bg)]"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--mm-muted)' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M7 22V11l3-9a1 1 0 0 1 1-.5c.8 0 1.5.7 1.5 1.5v5h5.5a2 2 0 0 1 2 2.3l-1.4 7A2 2 0 0 1 16.6 19H7z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+                      <path d="M3 11h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleFeedback('нет')}
+                    title="Не полезно"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--mm-red-bg)]"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--mm-muted)' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M17 2v11l-3 9a1 1 0 0 1-1 .5c-.8 0-1.5-.7-1.5-1.5v-5H6a2 2 0 0 1-2-2.3l1.4-7A2 2 0 0 1 7.4 5H17z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+                      <path d="M21 13h-2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleFeedback('написать отзыв')}
+                    title="Написать отзыв"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[var(--mm-amber-bg)]"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--mm-muted)' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
                 </>
               )}
             </div>
