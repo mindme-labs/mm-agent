@@ -29,13 +29,6 @@ const PRIORITY_LABEL: Record<string, string> = {
   low: 'Низкий',
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  in_progress: 'В работе',
-  resolved: 'Решена',
-  stuck: 'Зависла',
-  dismissed: 'Отклонена',
-}
-
 const STATUS_SELECT_OPTIONS = [
   { value: 'in_progress', label: 'В работе' },
   { value: 'resolved', label: 'Решена' },
@@ -157,7 +150,7 @@ export function TasksView({ initialTasks }: { initialTasks: Task[] }) {
                 { key: 'dismissed', label: 'Отклонены' },
               ] as const).map((item) => (
                 <button
-                  key={key}
+                  key={item.key}
                   onClick={() => setTab(item.key as TabFilter)}
                   className="relative rounded-md px-3 py-2 text-xs font-semibold transition-colors"
                   style={{
