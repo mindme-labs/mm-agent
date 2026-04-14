@@ -9,6 +9,11 @@ export async function POST() {
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
+
+    await logEvent(user.id, 'onboarding.analysis_start', undefined, undefined, {
+      mode: user.mode,
+    })
+
     const count = await seedDemoForUser(user.id)
 
     await logEvent(user.id, 'onboarding.analysis_complete', undefined, undefined, {

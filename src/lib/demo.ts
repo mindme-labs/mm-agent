@@ -5,7 +5,10 @@ import path from 'path'
 import { parseOSVFile } from './parser/osv-parser'
 import { runRulesEngine } from './rules/engine'
 import { calculateMetrics } from './rules/metrics'
-import type { ParsedAccountData } from '@/types'
+import { runAIAudit } from './ai/audit'
+import { isAIAvailable } from './ai/client'
+import { logEvent } from './logger'
+import type { ParsedAccountData, GeneratedRecommendation } from '@/types'
 
 function loadDemoData(): ParsedAccountData[] {
   const demoDir = path.resolve(process.cwd(), 'src/demo-data')
@@ -17,8 +20,33 @@ export async function seedDemoForUser(userId: string): Promise<number> {
   const payload = await getPayload({ config })
 
   const data = loadDemoData()
-  const recommendations = runRulesEngine(data)
+  const recommendations: GeneratedRecommendation[] = runRulesEngine(data)
   const metrics = calculateMetrics(data)
+
+  let aiAuditSummary: string | undefined
+  const aiAvailable = await isAIAvailable()
+
+  if (aiAvailable) {
+    try {
+      const auditResult = await runAIAudit(metrics, userId)
+      if (auditResult.recommendations.length > 0) {
+        recommendations.push(...auditResult.recommendations)
+      }
+      if (auditResult.summary) {
+        aiAuditSummary = auditResult.summary
+      }
+    } catch (err) {
+      console.warn('[Demo] AI audit failed, continuing with rules engine only:', err)
+      await logEvent(userId, 'ai.fallback', undefined, undefined, {
+        reason: 'audit_error',
+        error: err instanceof Error ? err.message : 'Unknown',
+      })
+    }
+  } else {
+    await logEvent(userId, 'ai.fallback', undefined, undefined, {
+      reason: 'ai_unavailable',
+    })
+  }
 
   await payload.create({
     collection: 'analysis-results',
@@ -39,6 +67,7 @@ export async function seedDemoForUser(userId: string): Promise<number> {
       healthIndex: metrics.healthIndex,
       topDebtors: metrics.topDebtors,
       topCreditors: metrics.topCreditors,
+      aiAuditSummary,
       isDemo: true,
     },
   })
@@ -63,13 +92,10 @@ export async function seedDemoForUser(userId: string): Promise<number> {
         counterparty: rec.counterparty,
         recipient: rec.recipient,
         isDemo: true,
-        isAiGenerated: false,
+        isAiGenerated: rec.ruleCode === 'AI-AUDIT',
       },
     })
   }
-
-  // Demo mode: store parsed file metadata in analysis results instead of
-  // creating upload records (which require actual file uploads).
 
   return recommendations.length
 }

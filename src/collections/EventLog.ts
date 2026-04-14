@@ -4,7 +4,8 @@ export const EventLog: CollectionConfig = {
   slug: 'event-log',
   labels: { singular: 'Событие', plural: 'Журнал событий' },
   admin: {
-    defaultColumns: ['eventType', 'owner', 'entityType', 'createdAt'],
+    defaultColumns: ['eventType', 'owner', 'entityType', 'entityId', 'createdAt'],
+    listSearchableFields: ['eventType', 'entityType', 'entityId'],
   },
   access: {
     read: ({ req: { user } }) => user?.role === 'admin',
@@ -18,12 +19,36 @@ export const EventLog: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       hasMany: false,
+      admin: {
+        position: 'sidebar',
+      },
     },
     {
       name: 'eventType',
-      type: 'text',
+      type: 'select',
       label: 'Тип события',
       required: true,
+      options: [
+        { label: 'Вход', value: 'auth.login' },
+        { label: 'Выход', value: 'auth.logout' },
+        { label: 'Запрос доступа', value: 'access.request' },
+        { label: 'Инвайт использован', value: 'invite.used' },
+        { label: 'Онбординг: старт анализа', value: 'onboarding.analysis_start' },
+        { label: 'Онбординг: анализ завершён', value: 'onboarding.analysis_complete' },
+        { label: 'Онбординг: завершён', value: 'onboarding.complete' },
+        { label: 'Рекомендация: статус', value: 'recommendation.status_changed' },
+        { label: 'Рекомендация: отзыв', value: 'recommendation.feedback' },
+        { label: 'Рекомендация: текст скопирован', value: 'recommendation.text_copied' },
+        { label: 'Рекомендация: просмотр', value: 'recommendation.viewed' },
+        { label: 'AI: запрос', value: 'ai.request' },
+        { label: 'AI: ответ', value: 'ai.response' },
+        { label: 'AI: ошибка', value: 'ai.error' },
+        { label: 'AI: фоллбэк', value: 'ai.fallback' },
+        { label: 'Просмотр страницы', value: 'page.view' },
+      ],
+      admin: {
+        position: 'sidebar',
+      },
     },
     {
       name: 'entityType',

@@ -156,7 +156,7 @@ export function RecommendationCard({ recommendation: rec, showActions = true, on
               Не сейчас
             </button>
             {rec.fullText && (
-              <CopyDraftButton text={rec.fullText} variant="link" />
+              <CopyDraftButton text={rec.fullText} recommendationId={rec.id} variant="link" />
             )}
             <div className="ml-auto flex items-center gap-0.5">
               {feedbackGiven ? (

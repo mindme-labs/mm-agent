@@ -4,12 +4,13 @@ import { useState } from 'react'
 
 interface CopyDraftButtonProps {
   text: string
+  recommendationId?: string
   onCopy?: () => void
   variant?: 'default' | 'link'
   label?: string
 }
 
-export function CopyDraftButton({ text, onCopy, variant = 'default', label }: CopyDraftButtonProps) {
+export function CopyDraftButton({ text, recommendationId, onCopy, variant = 'default', label }: CopyDraftButtonProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -25,6 +26,13 @@ export function CopyDraftButton({ text, onCopy, variant = 'default', label }: Co
     }
     setCopied(true)
     onCopy?.()
+    if (recommendationId) {
+      fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventType: 'recommendation.text_copied', entityId: recommendationId }),
+      }).catch(() => {})
+    }
     setTimeout(() => setCopied(false), 2000)
   }
 
