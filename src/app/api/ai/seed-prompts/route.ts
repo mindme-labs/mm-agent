@@ -1,17 +1,18 @@
-import { NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { DEFAULT_PROMPTS } from '@/lib/ai/prompts'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser()
+    const payload = await getPayload({ config })
+
+    const { user } = await payload.auth({ headers: request.headers })
+
     if (!user || user.role !== 'admin') {
       return NextResponse.json({ error: 'Admin only' }, { status: 403 })
     }
 
-    const payload = await getPayload({ config })
     let created = 0
     let skipped = 0
 
