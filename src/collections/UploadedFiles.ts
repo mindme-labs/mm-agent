@@ -18,13 +18,6 @@ export const UploadedFiles: CollectionConfig = {
     create: ({ req: { user } }) => !!user,
     delete: ({ req: { user } }) => user?.role === 'admin',
   },
-  upload: {
-    mimeTypes: [
-      'text/csv',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ],
-  },
   fields: [
     {
       name: 'owner',
