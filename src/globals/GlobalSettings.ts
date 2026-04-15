@@ -28,7 +28,7 @@ export const GlobalSettings: GlobalConfig = {
       name: 'aiModel',
       type: 'text',
       label: 'Модель AI',
-      defaultValue: 'claude-sonnet-4-20250514',
+      defaultValue: 'claude-sonnet-4-6',
     },
     {
       name: 'trialDays',

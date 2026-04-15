@@ -64,7 +64,7 @@ async function loadPrompt(promptKey: string): Promise<{
     return {
       systemPrompt: prompt.systemPrompt,
       userPromptTemplate: prompt.userPromptTemplate ?? null,
-      model: (settings.aiModel as string) || 'claude-sonnet-4-20250514',
+      model: (settings.aiModel as string) || 'claude-sonnet-4-6',
     }
   } catch {
     return null
