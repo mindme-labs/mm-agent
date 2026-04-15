@@ -44,26 +44,99 @@ const ACCOUNTS = [
   { code: '90.02', name: 'Себестоимость' },
 ]
 
-interface DemoFile {
+interface UploadedFile {
+  file: File
   name: string
   size: string
+  status: 'pending' | 'uploading' | 'success' | 'warning' | 'error'
+  accountCode?: string
 }
 
-const DEMO_FILES: DemoFile[] = [
-  { name: 'ОСВ сч.10 2025.csv', size: '42 КБ' },
-  { name: 'ОСВ сч.41 2025.csv', size: '118 КБ' },
-  { name: 'ОСВ сч.62 2025.csv', size: '76 КБ' },
-]
+function formatSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`
+  return `${Math.round(bytes / 1024)} КБ`
+}
+
+const FILE_STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+  pending: { label: 'Готов', bg: 'var(--mm-green-bg)', color: 'var(--mm-green)' },
+  uploading: { label: 'Загрузка...', bg: 'var(--mm-amber-bg)', color: 'var(--mm-amber)' },
+  success: { label: 'Готов', bg: 'var(--mm-green-bg)', color: 'var(--mm-green)' },
+  warning: { label: 'Не распознан', bg: 'var(--mm-amber-bg)', color: 'var(--mm-amber)' },
+  error: { label: 'Ошибка', bg: 'var(--mm-red-bg)', color: 'var(--mm-red)' },
+}
 
 // ─── Start Screen ──────────────────────────────────────────────────────────────
 
-function StartScreen({ onBegin }: { onBegin: () => void }) {
-  const [files, setFiles] = useState<DemoFile[]>([])
+function StartScreen({ onBegin }: { onBegin: (useDemo: boolean) => void }) {
+  const [files, setFiles] = useState<UploadedFile[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
   const [carIdx, setCarIdx] = useState(0)
+  const [dragOver, setDragOver] = useState(false)
   const carRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  const addDemoFiles = () => {
-    if (files.length === 0) setFiles(DEMO_FILES)
+  const handleFiles = (fileList: FileList | File[]) => {
+    const newFiles = Array.from(fileList)
+      .filter(f => {
+        const ext = f.name.split('.').pop()?.toLowerCase()
+        return ext && ['csv', 'xlsx', 'xls'].includes(ext)
+      })
+      .map(f => ({
+        file: f,
+        name: f.name,
+        size: formatSize(f.size),
+        status: 'pending' as const,
+      }))
+
+    if (newFiles.length === 0) {
+      setUploadError('Поддерживаются только CSV и Excel файлы')
+      return
+    }
+
+    setUploadError('')
+    setFiles(prev => {
+      const combined = [...prev, ...newFiles]
+      return combined.slice(0, 10)
+    })
+  }
+
+  const removeFile = (idx: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  const handleUploadAndBegin = async () => {
+    if (files.length === 0) return
+    setUploading(true)
+    setUploadError('')
+    setFiles(prev => prev.map(f => ({ ...f, status: 'uploading' as const })))
+
+    try {
+      const formData = new FormData()
+      files.forEach(f => formData.append('files', f.file))
+
+      const res = await fetch('/api/files/upload', { method: 'POST', body: formData })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setUploadError(data.error || 'Ошибка загрузки')
+        setFiles(prev => prev.map(f => ({ ...f, status: 'error' as const })))
+        setUploading(false)
+        return
+      }
+
+      setFiles(prev => prev.map((f, i) => ({
+        ...f,
+        status: (data.files[i]?.status || 'success') as UploadedFile['status'],
+        accountCode: data.files[i]?.accountCode ?? undefined,
+      })))
+
+      onBegin(false)
+    } catch {
+      setUploadError('Сетевая ошибка. Проверьте подключение.')
+      setFiles(prev => prev.map(f => ({ ...f, status: 'error' as const })))
+      setUploading(false)
+    }
   }
 
   const handleScroll = () => {
@@ -71,6 +144,92 @@ function StartScreen({ onBegin }: { onBegin: () => void }) {
     const idx = Math.round(carRef.current.scrollLeft / 230)
     setCarIdx(idx)
   }
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    handleFiles(e.dataTransfer.files)
+  }
+
+  const uploadArea = (mobile: boolean) => (
+    <div
+      onClick={() => inputRef.current?.click()}
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={onDrop}
+      className={`cursor-pointer rounded-${mobile ? 'xl' : '2xl'} border-${mobile ? '2' : '[2.5px]'} border-dashed ${mobile ? 'px-4 py-8' : 'px-8 py-14'} text-center transition-colors`}
+      style={{
+        borderColor: dragOver ? 'var(--mm-green)' : 'var(--mm-border)',
+        background: dragOver ? 'var(--mm-green-bg)' : 'var(--mm-white)',
+      }}>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".csv,.xlsx,.xls"
+        multiple
+        className="hidden"
+        onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = '' }}
+      />
+      <div className={`mx-auto ${mobile ? 'mb-3' : 'mb-4'} flex ${mobile ? 'h-8 w-8' : 'h-11 w-11'} items-center justify-center rounded-${mobile ? 'lg' : 'xl'}`}
+        style={{ background: 'var(--mm-green-bg)' }}>
+        <svg width={mobile ? '16' : '22'} height={mobile ? '16' : '22'} viewBox="0 0 44 44" fill="none">
+          <path d="M22 14v16M14 22l8-8 8 8" stroke="var(--mm-green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      <div className={`mb-1 ${mobile ? 'text-sm' : 'text-xl'} font-bold`} style={{ color: 'var(--mm-ink)' }}>
+        {mobile ? 'Выберите файлы' : 'Перетащите файлы сюда'}
+      </div>
+      <p className={`${mobile ? 'mb-3 text-xs' : 'mb-5 text-base'}`} style={{ color: 'var(--mm-muted)' }}>
+        {mobile ? 'или перетащите сюда' : 'или выберите через проводник'}
+      </p>
+      <button className={`inline-flex items-center gap-1.5 rounded-${mobile ? 'lg' : 'xl'} ${mobile ? 'px-5 py-2.5 text-sm' : 'px-8 py-3.5 text-base'} font-semibold text-white transition-opacity hover:opacity-90`}
+        style={{ background: 'var(--mm-green)' }}>
+        Выбрать файлы
+      </button>
+      <div className={`${mobile ? 'mt-2 text-xs' : 'mt-3.5 text-sm'}`} style={{ color: 'var(--mm-muted)' }}>
+        CSV или Excel · до 10 файлов · до 10 Мб
+      </div>
+    </div>
+  )
+
+  const fileList = (mobile: boolean) => files.length > 0 && (
+    <div className={`${mobile ? 'mb-3' : 'mt-4'} flex flex-col gap-1.5`}>
+      {files.map((f, i) => {
+        const st = FILE_STATUS_CONFIG[f.status]
+        return (
+          <div key={`${f.name}-${i}`} className={`flex items-center gap-${mobile ? '2.5' : '3'} rounded-${mobile ? 'lg' : 'xl'} border ${mobile ? 'p-2.5' : 'p-3'}`}
+            style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
+            <div className={`flex ${mobile ? 'h-7 w-7' : 'h-8 w-8'} shrink-0 items-center justify-center rounded-${mobile ? 'md' : 'lg'}`}
+              style={{ background: 'var(--mm-green-bg)' }}>
+              <svg width={mobile ? '14' : '16'} height={mobile ? '14' : '16'} viewBox="0 0 16 16" fill="none">
+                <path d="M4 1h5.5L13 5v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"
+                  stroke="var(--mm-green)" strokeWidth="1.3" fill="none" />
+              </svg>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className={`truncate ${mobile ? 'text-xs' : 'text-sm'} font-semibold`} style={{ color: 'var(--mm-ink)' }}>
+                {f.name}
+              </div>
+              <div className={`${mobile ? 'text-[10px]' : 'text-xs'}`} style={{ color: 'var(--mm-muted)' }}>
+                {f.size}{f.accountCode ? ` · сч. ${f.accountCode}` : ''}
+              </div>
+            </div>
+            <span className={`rounded-full ${mobile ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'} font-semibold`}
+              style={{ background: st.bg, color: st.color }}>
+              {st.label}
+            </span>
+            {f.status !== 'uploading' && (
+              <button onClick={(e) => { e.stopPropagation(); removeFile(i) }}
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs transition-colors hover:bg-[var(--mm-red-bg)]"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--mm-muted)' }}>
+                ×
+              </button>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
 
   return (
     <div className="min-h-dvh" style={{ background: 'var(--mm-bg)' }}>
@@ -89,7 +248,6 @@ function StartScreen({ onBegin }: { onBegin: () => void }) {
             Загрузите данные из 1С — через минуту получите рекомендации по оборотному капиталу.
           </p>
 
-          {/* Carousel */}
           <div className="mb-1 text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--mm-green)' }}>
             Как это работает
           </div>
@@ -106,14 +264,6 @@ function StartScreen({ onBegin }: { onBegin: () => void }) {
                 </div>
                 <h3 className="mb-1 text-sm font-bold" style={{ color: 'var(--mm-ink)' }}>{item.title}</h3>
                 <p className="text-xs leading-relaxed" style={{ color: 'var(--mm-ink2)' }}>{item.text}</p>
-                {item.demo && (
-                  <div className="mt-2 rounded-md p-2 text-xs" style={{ background: 'var(--mm-bg)', border: '1px solid var(--mm-border)' }}>
-                    <span className="mb-0.5 inline-block rounded-full px-1.5 py-0.5 text-[9px] font-bold"
-                      style={{ background: 'var(--mm-red-bg)', color: 'var(--mm-red)' }}>Критично</span>
-                    <div className="text-xs font-semibold" style={{ color: 'var(--mm-ink)' }}>ООО «Вектор» — 38% ДЗ</div>
-                    <div className="text-[10px]" style={{ color: 'var(--mm-muted)' }}>₽4.5M под риском</div>
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -124,58 +274,32 @@ function StartScreen({ onBegin }: { onBegin: () => void }) {
             ))}
           </div>
 
-          {/* Upload */}
           <div className="mb-1 text-base font-bold" style={{ color: 'var(--mm-ink)' }}>Загрузите файлы</div>
           <div className="mb-3 text-sm" style={{ color: 'var(--mm-ink2)' }}>ОСВ из 1С:Бухгалтерии в CSV</div>
-          <div
-            onClick={addDemoFiles}
-            className="mb-3 cursor-pointer rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors"
-            style={{ borderColor: 'var(--mm-border)', background: 'var(--mm-white)' }}>
-            <div className="mx-auto mb-3 flex h-8 w-8 items-center justify-center rounded-lg"
-              style={{ background: 'var(--mm-green-bg)' }}>
-              <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
-                <path d="M16 10v12M10 16l6-6 6 6" stroke="var(--mm-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <div className="mb-1 text-sm font-bold" style={{ color: 'var(--mm-ink)' }}>Выберите файлы</div>
-            <div className="mb-3 text-xs" style={{ color: 'var(--mm-muted)' }}>или перетащите сюда</div>
-            <button className="inline-flex items-center gap-1.5 rounded-lg px-5 py-2.5 text-sm font-semibold text-white"
-              style={{ background: 'var(--mm-green)' }}>
-              Выбрать файлы
-            </button>
-            <div className="mt-2 text-xs" style={{ color: 'var(--mm-muted)' }}>CSV / Excel · до 10 файлов · до 10 Мб</div>
-          </div>
+          {uploadArea(true)}
+          {fileList(true)}
 
-          {files.length > 0 && (
-            <div className="mb-3 flex flex-col gap-1.5">
-              {files.map((f) => (
-                <div key={f.name} className="flex items-center gap-2.5 rounded-lg border p-2.5"
-                  style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
-                    style={{ background: 'var(--mm-green-bg)' }}>
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                      <path d="M4 1h5.5L13 5v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"
-                        stroke="var(--mm-green)" strokeWidth="1.3" fill="none" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-semibold" style={{ color: 'var(--mm-ink)' }}>{f.name}</div>
-                    <div className="text-[10px]" style={{ color: 'var(--mm-muted)' }}>{f.size}</div>
-                  </div>
-                  <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                    style={{ background: 'var(--mm-green-bg)', color: 'var(--mm-green)' }}>Готов</span>
-                </div>
-              ))}
+          {uploadError && (
+            <div className="my-2 rounded-lg px-3 py-2 text-xs font-medium" style={{ background: 'var(--mm-red-bg)', color: 'var(--mm-red)' }}>
+              {uploadError}
             </div>
           )}
 
           <button
-            onClick={onBegin}
-            disabled={files.length === 0}
-            className="w-full rounded-lg py-4 text-sm font-semibold text-white transition-opacity disabled:cursor-default disabled:opacity-40"
+            onClick={handleUploadAndBegin}
+            disabled={files.length === 0 || uploading}
+            className="mt-3 w-full rounded-lg py-4 text-sm font-semibold text-white transition-opacity disabled:cursor-default disabled:opacity-40"
             style={{ background: files.length > 0 ? 'var(--mm-green)' : 'var(--mm-border)', color: files.length > 0 ? '#fff' : 'var(--mm-muted)' }}>
-            Начать анализ
+            {uploading ? 'Загрузка...' : 'Начать анализ'}
           </button>
+
+          <div className="mt-3 text-center">
+            <button onClick={() => onBegin(true)}
+              className="text-xs font-medium underline"
+              style={{ color: 'var(--mm-muted)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+              Попробовать на демо-данных
+            </button>
+          </div>
 
           <details className="mt-4 rounded-xl border" style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
             <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold"
@@ -199,7 +323,6 @@ function StartScreen({ onBegin }: { onBegin: () => void }) {
       {/* Desktop layout */}
       <div className="hidden lg:block">
         <div className="mx-auto max-w-[1100px] px-14 pb-16 pt-12">
-          {/* Welcome */}
           <div className="mb-12">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-semibold"
               style={{ color: 'var(--mm-green)', background: 'var(--mm-green-bg)', borderColor: 'rgba(15,123,92,.18)' }}>
@@ -214,7 +337,6 @@ function StartScreen({ onBegin }: { onBegin: () => void }) {
             </p>
           </div>
 
-          {/* How it works */}
           <div className="mb-14">
             <div className="mb-4 text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--mm-green)' }}>
               Как это работает
@@ -229,20 +351,11 @@ function StartScreen({ onBegin }: { onBegin: () => void }) {
                   </div>
                   <h3 className="mb-1.5 text-lg font-bold" style={{ color: 'var(--mm-ink)' }}>{item.title}</h3>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--mm-ink2)' }}>{item.text}</p>
-                  {item.demo && (
-                    <div className="mt-3 rounded-lg p-3" style={{ background: 'var(--mm-bg)', border: '1px solid var(--mm-border)' }}>
-                      <span className="mb-1 inline-block rounded-full px-2 py-0.5 text-xs font-bold"
-                        style={{ background: 'var(--mm-red-bg)', color: 'var(--mm-red)' }}>Критично</span>
-                      <div className="text-sm font-semibold" style={{ color: 'var(--mm-ink)' }}>ООО «Вектор» — 38% дебиторки</div>
-                      <div className="text-xs" style={{ color: 'var(--mm-muted)' }}>₽4.5M под риском невозврата</div>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Upload section */}
           <div>
             <h2 className="mb-1.5 text-2xl font-extrabold tracking-tight" style={{ color: 'var(--mm-ink)', letterSpacing: '-.02em' }}>
               Загрузите файлы для анализа
@@ -252,58 +365,32 @@ function StartScreen({ onBegin }: { onBegin: () => void }) {
             </p>
             <div className="grid gap-6" style={{ gridTemplateColumns: '1.4fr 1fr' }}>
               <div>
-                <div
-                  onClick={addDemoFiles}
-                  className="cursor-pointer rounded-2xl border-[2.5px] border-dashed px-8 py-14 text-center transition-colors hover:border-[var(--mm-green)] hover:bg-[var(--mm-green-bg)]"
-                  style={{ borderColor: 'var(--mm-border)', background: 'var(--mm-white)' }}>
-                  <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-xl"
-                    style={{ background: 'var(--mm-green-bg)' }}>
-                    <svg width="22" height="22" viewBox="0 0 44 44" fill="none">
-                      <path d="M22 14v16M14 22l8-8 8 8" stroke="var(--mm-green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <h3 className="mb-1.5 text-xl font-bold" style={{ color: 'var(--mm-ink)' }}>Перетащите файлы сюда</h3>
-                  <p className="mb-5 text-base" style={{ color: 'var(--mm-muted)' }}>или выберите через проводник</p>
-                  <button className="inline-flex items-center gap-1.5 rounded-xl px-8 py-3.5 text-base font-semibold text-white transition-opacity hover:opacity-90"
-                    style={{ background: 'var(--mm-green)' }}>
-                    Выбрать файлы
-                  </button>
-                  <div className="mt-3.5 text-sm" style={{ color: 'var(--mm-muted)' }}>CSV или Excel · до 10 файлов · до 10 Мб суммарно</div>
-                </div>
+                {uploadArea(false)}
+                {fileList(false)}
 
-                {files.length > 0 && (
-                  <div className="mt-4 flex flex-col gap-1.5">
-                    {files.map((f) => (
-                      <div key={f.name} className="flex items-center gap-3 rounded-xl border p-3"
-                        style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-                          style={{ background: 'var(--mm-green-bg)' }}>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M4 1h5.5L13 5v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"
-                              stroke="var(--mm-green)" strokeWidth="1.3" fill="none" />
-                          </svg>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-semibold" style={{ color: 'var(--mm-ink)' }}>{f.name}</div>
-                          <div className="text-xs" style={{ color: 'var(--mm-muted)' }}>{f.size}</div>
-                        </div>
-                        <span className="rounded-full px-2.5 py-1 text-xs font-semibold"
-                          style={{ background: 'var(--mm-green-bg)', color: 'var(--mm-green)' }}>Готов</span>
-                      </div>
-                    ))}
+                {uploadError && (
+                  <div className="mt-2 rounded-lg px-4 py-2.5 text-sm font-medium" style={{ background: 'var(--mm-red-bg)', color: 'var(--mm-red)' }}>
+                    {uploadError}
                   </div>
                 )}
 
                 <button
-                  onClick={onBegin}
-                  disabled={files.length === 0}
+                  onClick={handleUploadAndBegin}
+                  disabled={files.length === 0 || uploading}
                   className="mt-3.5 w-full rounded-xl py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-40"
                   style={{ background: files.length > 0 ? 'var(--mm-green)' : 'var(--mm-border)' }}>
-                  Начать анализ
+                  {uploading ? 'Загрузка файлов...' : 'Начать анализ'}
                 </button>
+
+                <div className="mt-3 text-center">
+                  <button onClick={() => onBegin(true)}
+                    className="text-sm font-medium underline"
+                    style={{ color: 'var(--mm-muted)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Или попробовать на демо-данных
+                  </button>
+                </div>
               </div>
 
-              {/* Accounts sidebar */}
               <div className="rounded-2xl border p-6" style={{ background: 'var(--mm-white)', borderColor: 'var(--mm-border)' }}>
                 <div className="mb-4 text-base font-bold" style={{ color: 'var(--mm-ink)' }}>Какие счета загрузить</div>
                 <div className="flex flex-col gap-1.5">
@@ -327,11 +414,12 @@ function StartScreen({ onBegin }: { onBegin: () => void }) {
 // ─── Analysis Screen ────────────────────────────────────────────────────────
 
 interface AnalysisScreenProps {
+  useDemo: boolean
   onComplete: (count: number) => void
   onCancel: () => void
 }
 
-function AnalysisScreen({ onComplete, onCancel }: AnalysisScreenProps) {
+function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) {
   const [current, setCurrent] = useState(0)
   const [done, setDone] = useState(false)
   const [recommendationCount, setRecommendationCount] = useState(0)
@@ -350,9 +438,10 @@ function AnalysisScreen({ onComplete, onCancel }: AnalysisScreenProps) {
 
         if (i === ANALYSIS_STAGES.length - 1) {
           try {
-            const res = await fetch('/api/demo/seed', { method: 'POST' })
+            const endpoint = useDemo ? '/api/demo/seed' : '/api/analysis/run'
+            const res = await fetch(endpoint, { method: 'POST' })
             const data = await res.json()
-            if (!res.ok) throw new Error(data.error || 'Seed failed')
+            if (!res.ok) throw new Error(data.error || 'Analysis failed')
             setRecommendationCount(data.recommendationCount)
           } catch (err) {
             setError((err as Error).message)
@@ -360,7 +449,7 @@ function AnalysisScreen({ onComplete, onCancel }: AnalysisScreenProps) {
             return
           }
         } else {
-          await new Promise(r => setTimeout(r, 1400))
+          await new Promise(r => setTimeout(r, useDemo ? 1400 : 800))
         }
       }
 
@@ -369,7 +458,7 @@ function AnalysisScreen({ onComplete, onCancel }: AnalysisScreenProps) {
     }
 
     run()
-  }, [])
+  }, [useDemo])
 
   const handleGoToResults = useCallback(() => {
     onComplete(recommendationCount)
@@ -466,7 +555,6 @@ function AnalysisScreen({ onComplete, onCancel }: AnalysisScreenProps) {
 
       {/* Desktop: split layout */}
       <div className="hidden w-full lg:flex">
-        {/* Left — dark panel */}
         <div className="relative flex w-1/2 flex-col justify-center px-16 py-16" style={{ background: 'var(--mm-ink)' }}>
           <h1 className="mb-3 text-4xl font-extrabold leading-tight tracking-tight text-white" style={{ letterSpacing: '-.03em' }}>
             {done ? 'Готово!' : 'Анализируем\nваши данные'}
@@ -474,7 +562,7 @@ function AnalysisScreen({ onComplete, onCancel }: AnalysisScreenProps) {
           <p className="mb-10 max-w-sm text-lg leading-relaxed" style={{ color: 'rgba(255,255,255,.5)' }}>
             {done
               ? 'Рекомендации сформированы. Переходите к результатам.'
-              : 'Проверяем 9 типов рисков, рассчитываем метрики, формируем рекомендации. Это займёт около минуты.'}
+              : 'Проверяем 9 типов рисков, рассчитываем метрики, формируем рекомендации.'}
           </p>
 
           {!done && (
@@ -518,7 +606,6 @@ function AnalysisScreen({ onComplete, onCancel }: AnalysisScreenProps) {
           )}
         </div>
 
-        {/* Right — progress */}
         <div className="flex w-1/2 items-center justify-center px-16">
           {!done ? (
             <div className="w-full max-w-md text-center">
@@ -579,7 +666,13 @@ function AnalysisScreen({ onComplete, onCancel }: AnalysisScreenProps) {
 
 export function OnboardingWizard() {
   const [step, setStep] = useState<'start' | 'analysis' | 'done'>('start')
+  const [useDemo, setUseDemo] = useState(false)
   const [recCount, setRecCount] = useState(0)
+
+  const handleBegin = (demo: boolean) => {
+    setUseDemo(demo)
+    setStep('analysis')
+  }
 
   const handleAnalysisComplete = useCallback(async (count: number) => {
     setRecCount(count)
@@ -594,6 +687,7 @@ export function OnboardingWizard() {
   if (step === 'analysis') {
     return (
       <AnalysisScreen
+        useDemo={useDemo}
         onComplete={handleAnalysisComplete}
         onCancel={() => setStep('start')}
       />
@@ -618,7 +712,5 @@ export function OnboardingWizard() {
     )
   }
 
-  return (
-    <StartScreen onBegin={() => setStep('analysis')} />
-  )
+  return <StartScreen onBegin={handleBegin} />
 }
