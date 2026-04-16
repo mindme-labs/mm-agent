@@ -125,7 +125,7 @@ export async function callAI(options: AICallOptions): Promise<AICallResult | nul
 
   const start = Date.now()
 
-  await logEvent(userId, 'ai.request', undefined, undefined, {
+  await logAIEvent(userId, 'ai.request', {
     promptKey,
     model: prompt.model,
   })
@@ -155,7 +155,7 @@ export async function callAI(options: AICallOptions): Promise<AICallResult | nul
 
     await logUsage(userId, promptKey, result.inputTokens, result.outputTokens, result.model, result.durationMs)
 
-    await logEvent(userId, 'ai.response', undefined, undefined, {
+    await logAIEvent(userId, 'ai.response', {
       promptKey,
       model: prompt.model,
       inputTokens: result.inputTokens,
@@ -166,7 +166,7 @@ export async function callAI(options: AICallOptions): Promise<AICallResult | nul
     return result
   } catch (err) {
     console.error(`[AI] Call failed for prompt "${promptKey}":`, err)
-    await logEvent(userId, 'ai.error', undefined, undefined, {
+    await logAIEvent(userId, 'ai.error', {
       promptKey,
       error: err instanceof Error ? err.message : 'Unknown error',
     })
@@ -174,15 +174,13 @@ export async function callAI(options: AICallOptions): Promise<AICallResult | nul
   }
 }
 
-async function logEvent(
+async function logAIEvent(
   userId: string,
-  eventType: string,
-  entityType?: string,
-  entityId?: string,
+  eventType: 'ai.request' | 'ai.response' | 'ai.error',
   eventPayload?: Record<string, unknown>,
 ): Promise<void> {
   try {
     const { logEvent: log } = await import('@/lib/logger')
-    await log(userId, eventType, entityType, entityId, eventPayload)
+    await log(userId, eventType, undefined, undefined, eventPayload)
   } catch {}
 }

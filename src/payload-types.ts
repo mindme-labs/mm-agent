@@ -234,15 +234,6 @@ export interface UploadedFile {
     | null;
   updatedAt: string;
   createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -269,6 +260,7 @@ export interface Recommendation {
   isAiGenerated?: boolean | null;
   takenAt?: string | null;
   dueDate?: string | null;
+  resolvedAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -324,6 +316,7 @@ export interface AnalysisResult {
     | boolean
     | null;
   aiAuditSummary?: string | null;
+  analysisPhase?: ('rules_done' | 'ai_pending' | 'ai_complete' | 'ai_error') | null;
   isDemo?: boolean | null;
   updatedAt: string;
   createdAt: string;
@@ -366,7 +359,24 @@ export interface AiUsageLog {
 export interface EventLog {
   id: string;
   owner?: (string | null) | User;
-  eventType: string;
+  eventType:
+    | 'auth.login'
+    | 'auth.logout'
+    | 'access.request'
+    | 'invite.used'
+    | 'onboarding.analysis_start'
+    | 'onboarding.analysis_complete'
+    | 'onboarding.complete'
+    | 'onboarding.file_upload'
+    | 'recommendation.status_changed'
+    | 'recommendation.feedback'
+    | 'recommendation.text_copied'
+    | 'recommendation.viewed'
+    | 'ai.request'
+    | 'ai.response'
+    | 'ai.error'
+    | 'ai.fallback'
+    | 'page.view';
   entityType?: string | null;
   entityId?: string | null;
   payload?:
@@ -586,15 +596,6 @@ export interface UploadedFilesSelect<T extends boolean = true> {
   aiRecognitionLog?: T;
   updatedAt?: T;
   createdAt?: T;
-  url?: T;
-  thumbnailURL?: T;
-  filename?: T;
-  mimeType?: T;
-  filesize?: T;
-  width?: T;
-  height?: T;
-  focalX?: T;
-  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -620,6 +621,7 @@ export interface RecommendationsSelect<T extends boolean = true> {
   isAiGenerated?: T;
   takenAt?: T;
   dueDate?: T;
+  resolvedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -657,6 +659,7 @@ export interface AnalysisResultsSelect<T extends boolean = true> {
   topDebtors?: T;
   topCreditors?: T;
   aiAuditSummary?: T;
+  analysisPhase?: T;
   isDemo?: T;
   updatedAt?: T;
   createdAt?: T;

@@ -36,6 +36,7 @@ export const EventLog: CollectionConfig = {
         { label: 'Онбординг: старт анализа', value: 'onboarding.analysis_start' },
         { label: 'Онбординг: анализ завершён', value: 'onboarding.analysis_complete' },
         { label: 'Онбординг: завершён', value: 'onboarding.complete' },
+        { label: 'Онбординг: загрузка файла', value: 'onboarding.file_upload' },
         { label: 'Рекомендация: статус', value: 'recommendation.status_changed' },
         { label: 'Рекомендация: отзыв', value: 'recommendation.feedback' },
         { label: 'Рекомендация: текст скопирован', value: 'recommendation.text_copied' },

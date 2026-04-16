@@ -70,6 +70,7 @@ export async function POST() {
           topDebtors: metrics.topDebtors,
           topCreditors: metrics.topCreditors,
           isDemo: false,
+          analysisPhase: 'rules_done',
         },
       }),
       ...recommendations.map((rec) =>

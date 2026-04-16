@@ -32,6 +32,7 @@ const ANALYSIS_STAGES = [
   'Расчёт метрик',
   'Проверка правил',
   'Формирование рекомендаций',
+  'AI-аудит оборотного капитала',
 ]
 
 const ACCOUNTS = [
@@ -419,63 +420,94 @@ interface AnalysisScreenProps {
   onCancel: () => void
 }
 
+async function safeFetch(url: string, opts?: RequestInit): Promise<{ ok: boolean; data: Record<string, unknown> }> {
+  try {
+    const res = await fetch(url, opts)
+    const data = await res.json()
+    return { ok: res.ok, data }
+  } catch (err) {
+    return { ok: false, data: { error: err instanceof Error ? err.message : 'Сетевая ошибка' } }
+  }
+}
+
 function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) {
   const [current, setCurrent] = useState(0)
   const [done, setDone] = useState(false)
+  const [aiPhase, setAiPhase] = useState<'pending' | 'running' | 'done' | 'error'>('pending')
   const [recommendationCount, setRecommendationCount] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const running = useRef(false)
 
-  const progress = done ? 100 : Math.round(((current + 1) / ANALYSIS_STAGES.length) * 100)
+  const totalStages = ANALYSIS_STAGES.length
+  const rulesStages = totalStages - 1
+  const progress = done ? 100 : Math.round(((Math.min(current + 1, totalStages)) / totalStages) * 100)
 
   useEffect(() => {
     if (running.current) return
     running.current = true
 
     const run = async () => {
-      for (let i = 0; i < ANALYSIS_STAGES.length; i++) {
+      // Phase 1: Simulate first 4 stages, then call rules engine
+      for (let i = 0; i < rulesStages; i++) {
         setCurrent(i)
-
-        if (i === ANALYSIS_STAGES.length - 1) {
-          try {
-            const endpoint = useDemo ? '/api/demo/seed' : '/api/analysis/run'
-            const controller = new AbortController()
-            const timeout = setTimeout(() => controller.abort(), 120000)
-            let res: Response
-            try {
-              res = await fetch(endpoint, { method: 'POST', signal: controller.signal })
-            } catch (fetchErr) {
-              clearTimeout(timeout)
-              const isAbort = fetchErr instanceof Error && fetchErr.name === 'AbortError'
-              throw new Error(isAbort
-                ? 'Анализ занял слишком много времени. Попробуйте загрузить меньше файлов.'
-                : 'Сервер не отвечает. Возможно, анализ ещё выполняется — обновите страницу через минуту.')
-            }
-            clearTimeout(timeout)
-            let data: Record<string, unknown>
-            try {
-              data = await res.json()
-            } catch {
-              throw new Error('Сервер вернул некорректный ответ. Попробуйте ещё раз.')
-            }
-            if (!res.ok) throw new Error((data.error as string) || 'Ошибка анализа')
-            setRecommendationCount(data.recommendationCount as number)
-          } catch (err) {
-            setError(err instanceof Error ? err.message : 'Неизвестная ошибка')
+        if (i === rulesStages - 1) {
+          const endpoint = useDemo ? '/api/demo/seed' : '/api/analysis/run'
+          const { ok, data } = await safeFetch(endpoint, { method: 'POST' })
+          if (!ok) {
+            setError((data.error as string) || 'Ошибка анализа')
             running.current = false
             return
           }
+          setRecommendationCount(data.recommendationCount as number)
         } else {
-          await new Promise(r => setTimeout(r, useDemo ? 1400 : 800))
+          await new Promise(r => setTimeout(r, useDemo ? 1200 : 600))
         }
       }
 
-      await new Promise(r => setTimeout(r, 400))
+      if (useDemo) {
+        setCurrent(totalStages)
+        await new Promise(r => setTimeout(r, 300))
+        setDone(true)
+        return
+      }
+
+      // Phase 2: AI audit — separate serverless call
+      setCurrent(rulesStages)
+      setAiPhase('running')
+
+      const { ok: auditOk } = await safeFetch('/api/analysis/ai-audit', { method: 'POST' })
+
+      if (!auditOk) {
+        // AI failed — that's fine, continue with rules-only results
+        setAiPhase('error')
+      } else {
+        // Poll for completion
+        for (let poll = 0; poll < 20; poll++) {
+          await new Promise(r => setTimeout(r, 3000))
+          const { ok: statusOk, data: statusData } = await safeFetch('/api/analysis/status')
+          if (!statusOk) break
+
+          const phase = statusData.phase as string
+          setRecommendationCount(statusData.recommendationCount as number)
+
+          if (phase === 'ai_complete') {
+            setAiPhase('done')
+            break
+          }
+          if (phase === 'ai_error') {
+            setAiPhase('error')
+            break
+          }
+        }
+      }
+
+      setCurrent(totalStages)
+      await new Promise(r => setTimeout(r, 300))
       setDone(true)
     }
 
     run()
-  }, [useDemo])
+  }, [useDemo, rulesStages, totalStages])
 
   const handleGoToResults = useCallback(() => {
     onComplete(recommendationCount)

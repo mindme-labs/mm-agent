@@ -114,6 +114,19 @@ export const AnalysisResults: CollectionConfig = {
       label: 'Резюме AI-аудита',
     },
     {
+      name: 'analysisPhase',
+      type: 'select',
+      label: 'Фаза анализа',
+      defaultValue: 'rules_done',
+      options: [
+        { label: 'Правила выполнены', value: 'rules_done' },
+        { label: 'AI-аудит запущен', value: 'ai_pending' },
+        { label: 'AI-аудит завершён', value: 'ai_complete' },
+        { label: 'AI-аудит: ошибка', value: 'ai_error' },
+      ],
+      admin: { position: 'sidebar' },
+    },
+    {
       name: 'isDemo',
       type: 'checkbox',
       label: 'Демо-данные',

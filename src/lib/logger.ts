@@ -1,9 +1,12 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import type { EventLog } from '@/payload-types'
+
+type EventType = NonNullable<EventLog['eventType']>
 
 export async function logEvent(
   userId: string | null,
-  eventType: string,
+  eventType: EventType,
   entityType?: string,
   entityId?: string,
   eventPayload?: Record<string, unknown>,
