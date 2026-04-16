@@ -37,8 +37,9 @@ export async function POST() {
     const parseErrors: string[] = []
 
     for (const doc of filesResult.docs) {
-      const content = doc.parsedData as string | null
-      if (!content || typeof content !== 'string') continue
+      const rawData = doc.parsedData as { raw?: string } | string | null
+      const content = typeof rawData === 'string' ? rawData : rawData?.raw ?? null
+      if (!content) continue
 
       try {
         const parsed = parseOSVFile(content)

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
           accountCode: identified?.accountCode,
           period: identified?.period,
           parseStatus: identified ? 'success' : 'warning',
-          parsedData: content,
+          parsedData: { raw: content },
         },
       })
 
@@ -72,7 +72,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, files: uploaded })
   } catch (err) {
-    console.error('[Upload] Error:', err)
-    return NextResponse.json({ error: 'Ошибка загрузки' }, { status: 500 })
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    console.error('[Upload] Error:', message, err)
+    return NextResponse.json({ error: `Ошибка загрузки: ${message}` }, { status: 500 })
   }
 }
