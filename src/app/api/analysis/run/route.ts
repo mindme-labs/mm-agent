@@ -5,10 +5,11 @@ import config from '@payload-config'
 import { parseOSVFile } from '@/lib/parser/osv-parser'
 import { runRulesEngine } from '@/lib/rules/engine'
 import { calculateMetrics } from '@/lib/rules/metrics'
-import { runAIAudit } from '@/lib/ai/audit'
 import { isAIAvailable } from '@/lib/ai/client'
 import { logEvent } from '@/lib/logger'
 import type { ParsedAccountData, GeneratedRecommendation } from '@/types'
+
+export const maxDuration = 60
 
 export async function POST() {
   try {
@@ -44,25 +45,14 @@ export async function POST() {
       try {
         const parsed = parseOSVFile(content)
         parsedData.push(parsed)
-
-        await payload.update({
-          collection: 'uploaded-files',
-          id: doc.id,
-          data: { parseStatus: 'success' },
-        })
       } catch (err) {
         parseErrors.push(`${doc.originalName}: ${err instanceof Error ? err.message : 'Ошибка парсинга'}`)
-        await payload.update({
-          collection: 'uploaded-files',
-          id: doc.id,
-          data: { parseStatus: 'error', parseErrors: [err instanceof Error ? err.message : 'Parse error'] },
-        })
       }
     }
 
     if (parsedData.length === 0) {
       return NextResponse.json({
-        error: 'Не удалось распознать ни одного файла',
+        error: 'Не удалось распознать ни одного файла. ' + (parseErrors.length > 0 ? parseErrors[0] : ''),
         details: parseErrors,
       }, { status: 400 })
     }
@@ -75,6 +65,7 @@ export async function POST() {
 
     if (aiAvailable) {
       try {
+        const { runAIAudit } = await import('@/lib/ai/audit')
         const auditResult = await runAIAudit(metrics, user.id)
         if (auditResult.recommendations.length > 0) {
           recommendations.push(...auditResult.recommendations)
@@ -84,15 +75,7 @@ export async function POST() {
         }
       } catch (err) {
         console.warn('[Analysis] AI audit failed:', err)
-        await logEvent(user.id, 'ai.fallback', undefined, undefined, {
-          reason: 'audit_error',
-          error: err instanceof Error ? err.message : 'Unknown',
-        })
       }
-    } else {
-      await logEvent(user.id, 'ai.fallback', undefined, undefined, {
-        reason: 'ai_unavailable',
-      })
     }
 
     await payload.create({
@@ -119,8 +102,8 @@ export async function POST() {
       },
     })
 
-    for (const rec of recommendations) {
-      await payload.create({
+    await Promise.all(recommendations.map((rec) =>
+      payload.create({
         collection: 'recommendations',
         data: {
           owner: user.id,
@@ -142,14 +125,12 @@ export async function POST() {
           isAiGenerated: rec.ruleCode === 'AI-AUDIT',
         },
       })
-    }
+    ))
 
     await logEvent(user.id, 'onboarding.analysis_complete', undefined, undefined, {
       recommendationCount: recommendations.length,
       filesProcessed: parsedData.length,
       parseErrors: parseErrors.length,
-      mode: user.mode,
-      source: 'user_files',
     })
 
     return NextResponse.json({
@@ -159,7 +140,8 @@ export async function POST() {
       parseErrors,
     })
   } catch (err) {
-    console.error('[Analysis] Error:', err)
-    return NextResponse.json({ error: 'Ошибка анализа' }, { status: 500 })
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    console.error('[Analysis] Error:', message, err)
+    return NextResponse.json({ error: `Ошибка анализа: ${message}` }, { status: 500 })
   }
 }

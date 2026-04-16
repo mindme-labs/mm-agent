@@ -439,12 +439,18 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
         if (i === ANALYSIS_STAGES.length - 1) {
           try {
             const endpoint = useDemo ? '/api/demo/seed' : '/api/analysis/run'
-            const res = await fetch(endpoint, { method: 'POST' })
+            const controller = new AbortController()
+            const timeout = setTimeout(() => controller.abort(), 90000)
+            const res = await fetch(endpoint, { method: 'POST', signal: controller.signal })
+            clearTimeout(timeout)
             const data = await res.json()
-            if (!res.ok) throw new Error(data.error || 'Analysis failed')
+            if (!res.ok) throw new Error(data.error || 'Ошибка анализа')
             setRecommendationCount(data.recommendationCount)
           } catch (err) {
-            setError((err as Error).message)
+            const msg = err instanceof Error
+              ? (err.name === 'AbortError' ? 'Анализ занял слишком много времени. Попробуйте загрузить меньше файлов.' : err.message)
+              : 'Неизвестная ошибка'
+            setError(msg)
             running.current = false
             return
           }
@@ -597,7 +603,18 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
             </div>
           )}
 
-          {!done && (
+          {error && (
+            <div className="mt-6 rounded-xl px-5 py-4" style={{ background: 'rgba(192,57,43,.15)' }}>
+              <div className="text-sm font-medium text-white">{error}</div>
+              <button onClick={onCancel}
+                className="mt-2 text-sm font-semibold underline"
+                style={{ color: '#fff', background: 'none', border: 'none', cursor: 'pointer' }}>
+                Вернуться и попробовать снова
+              </button>
+            </div>
+          )}
+
+          {!done && !error && (
             <button onClick={onCancel}
               className="absolute bottom-8 left-10 text-sm underline"
               style={{ color: 'rgba(255,255,255,.3)', background: 'none', border: 'none', cursor: 'pointer' }}>
