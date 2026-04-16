@@ -5,11 +5,16 @@ import config from '@payload-config'
 import { parseOSVFile } from '@/lib/parser/osv-parser'
 import { runRulesEngine } from '@/lib/rules/engine'
 import { calculateMetrics } from '@/lib/rules/metrics'
-import { isAIAvailable } from '@/lib/ai/client'
-import { logEvent } from '@/lib/logger'
 import type { ParsedAccountData, GeneratedRecommendation } from '@/types'
 
 export const maxDuration = 60
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    promise,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ])
+}
 
 export async function POST() {
   try {
@@ -17,11 +22,6 @@ export async function POST() {
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
     const payload = await getPayload({ config })
-
-    await logEvent(user.id, 'onboarding.analysis_start', undefined, undefined, {
-      mode: user.mode,
-      source: 'user_files',
-    })
 
     const filesResult = await payload.find({
       collection: 'uploaded-files',
@@ -52,7 +52,7 @@ export async function POST() {
 
     if (parsedData.length === 0) {
       return NextResponse.json({
-        error: 'Не удалось распознать ни одного файла. ' + (parseErrors.length > 0 ? parseErrors[0] : ''),
+        error: 'Не удалось распознать ни одного файла. ' + (parseErrors.length > 0 ? parseErrors[0] : 'Проверьте формат файлов.'),
         details: parseErrors,
       }, { status: 400 })
     }
@@ -61,21 +61,24 @@ export async function POST() {
     const metrics = calculateMetrics(parsedData)
 
     let aiAuditSummary: string | undefined
-    const aiAvailable = await isAIAvailable()
 
-    if (aiAvailable) {
-      try {
+    try {
+      const { isAIAvailable } = await import('@/lib/ai/client')
+      const aiAvailable = await withTimeout(isAIAvailable(), 3000)
+      if (aiAvailable) {
         const { runAIAudit } = await import('@/lib/ai/audit')
-        const auditResult = await runAIAudit(metrics, user.id)
-        if (auditResult.recommendations.length > 0) {
-          recommendations.push(...auditResult.recommendations)
+        const auditResult = await withTimeout(runAIAudit(metrics, user.id), 15000)
+        if (auditResult) {
+          if (auditResult.recommendations.length > 0) {
+            recommendations.push(...auditResult.recommendations)
+          }
+          if (auditResult.summary) {
+            aiAuditSummary = auditResult.summary
+          }
         }
-        if (auditResult.summary) {
-          aiAuditSummary = auditResult.summary
-        }
-      } catch (err) {
-        console.warn('[Analysis] AI audit failed:', err)
       }
+    } catch {
+      // AI is best-effort, continue without it
     }
 
     await payload.create({
@@ -102,36 +105,34 @@ export async function POST() {
       },
     })
 
-    await Promise.all(recommendations.map((rec) =>
-      payload.create({
-        collection: 'recommendations',
-        data: {
-          owner: user.id,
-          ruleCode: rec.ruleCode,
-          ruleName: rec.ruleName,
-          priority: rec.priority,
-          title: rec.title,
-          description: rec.description,
-          shortRecommendation: rec.shortRecommendation,
-          fullText: rec.fullText,
-          status: 'new',
-          impactMetric: rec.impactMetric,
-          impactDirection: rec.impactDirection,
-          impactAmount: rec.impactAmount,
-          sourceAccount: rec.sourceAccount,
-          counterparty: rec.counterparty,
-          recipient: rec.recipient,
-          isDemo: false,
-          isAiGenerated: rec.ruleCode === 'AI-AUDIT',
-        },
-      })
-    ))
-
-    await logEvent(user.id, 'onboarding.analysis_complete', undefined, undefined, {
-      recommendationCount: recommendations.length,
-      filesProcessed: parsedData.length,
-      parseErrors: parseErrors.length,
-    })
+    const BATCH_SIZE = 5
+    for (let i = 0; i < recommendations.length; i += BATCH_SIZE) {
+      const batch = recommendations.slice(i, i + BATCH_SIZE)
+      await Promise.all(batch.map((rec) =>
+        payload.create({
+          collection: 'recommendations',
+          data: {
+            owner: user.id,
+            ruleCode: rec.ruleCode,
+            ruleName: rec.ruleName,
+            priority: rec.priority,
+            title: rec.title,
+            description: rec.description,
+            shortRecommendation: rec.shortRecommendation,
+            fullText: rec.fullText,
+            status: 'new',
+            impactMetric: rec.impactMetric,
+            impactDirection: rec.impactDirection,
+            impactAmount: rec.impactAmount,
+            sourceAccount: rec.sourceAccount,
+            counterparty: rec.counterparty,
+            recipient: rec.recipient,
+            isDemo: false,
+            isAiGenerated: rec.ruleCode === 'AI-AUDIT',
+          },
+        })
+      ))
+    }
 
     return NextResponse.json({
       ok: true,

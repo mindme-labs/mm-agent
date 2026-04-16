@@ -440,17 +440,28 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
           try {
             const endpoint = useDemo ? '/api/demo/seed' : '/api/analysis/run'
             const controller = new AbortController()
-            const timeout = setTimeout(() => controller.abort(), 90000)
-            const res = await fetch(endpoint, { method: 'POST', signal: controller.signal })
+            const timeout = setTimeout(() => controller.abort(), 120000)
+            let res: Response
+            try {
+              res = await fetch(endpoint, { method: 'POST', signal: controller.signal })
+            } catch (fetchErr) {
+              clearTimeout(timeout)
+              const isAbort = fetchErr instanceof Error && fetchErr.name === 'AbortError'
+              throw new Error(isAbort
+                ? 'Анализ занял слишком много времени. Попробуйте загрузить меньше файлов.'
+                : 'Сервер не отвечает. Возможно, анализ ещё выполняется — обновите страницу через минуту.')
+            }
             clearTimeout(timeout)
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.error || 'Ошибка анализа')
-            setRecommendationCount(data.recommendationCount)
+            let data: Record<string, unknown>
+            try {
+              data = await res.json()
+            } catch {
+              throw new Error('Сервер вернул некорректный ответ. Попробуйте ещё раз.')
+            }
+            if (!res.ok) throw new Error((data.error as string) || 'Ошибка анализа')
+            setRecommendationCount(data.recommendationCount as number)
           } catch (err) {
-            const msg = err instanceof Error
-              ? (err.name === 'AbortError' ? 'Анализ занял слишком много времени. Попробуйте загрузить меньше файлов.' : err.message)
-              : 'Неизвестная ошибка'
-            setError(msg)
+            setError(err instanceof Error ? err.message : 'Неизвестная ошибка')
             running.current = false
             return
           }
