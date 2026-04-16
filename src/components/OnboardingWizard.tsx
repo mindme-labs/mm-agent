@@ -32,7 +32,7 @@ const ANALYSIS_STAGES = [
   'Расчёт метрик',
   'Проверка правил',
   'Формирование рекомендаций',
-  'AI-аудит оборотного капитала',
+  'AI улучшает рекомендации',
 ]
 
 const ACCOUNTS = [
@@ -433,8 +433,9 @@ async function safeFetch(url: string, opts?: RequestInit): Promise<{ ok: boolean
 function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) {
   const [current, setCurrent] = useState(0)
   const [done, setDone] = useState(false)
-  const [aiPhase, setAiPhase] = useState<'pending' | 'running' | 'done' | 'error'>('pending')
   const [recommendationCount, setRecommendationCount] = useState(0)
+  const [enhancedCount, setEnhancedCount] = useState(0)
+  const [enhanceLabel, setEnhanceLabel] = useState('')
   const [error, setError] = useState<string | null>(null)
   const running = useRef(false)
 
@@ -447,7 +448,6 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
     running.current = true
 
     const run = async () => {
-      // Phase 1: Simulate first 4 stages, then call rules engine
       for (let i = 0; i < rulesStages; i++) {
         setCurrent(i)
         if (i === rulesStages - 1) {
@@ -471,34 +471,30 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
         return
       }
 
-      // Phase 2: AI audit — separate serverless call
       setCurrent(rulesStages)
-      setAiPhase('running')
 
-      const { ok: auditOk } = await safeFetch('/api/analysis/ai-audit', { method: 'POST' })
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const { ok, data } = await safeFetch('/api/analysis/ai-enhance', { method: 'POST' })
 
-      if (!auditOk) {
-        // AI failed — that's fine, continue with rules-only results
-        setAiPhase('error')
-      } else {
-        // Poll for completion
-        for (let poll = 0; poll < 20; poll++) {
-          await new Promise(r => setTimeout(r, 3000))
-          const { ok: statusOk, data: statusData } = await safeFetch('/api/analysis/status')
-          if (!statusOk) break
-
-          const phase = statusData.phase as string
-          setRecommendationCount(statusData.recommendationCount as number)
-
-          if (phase === 'ai_complete') {
-            setAiPhase('done')
-            break
-          }
-          if (phase === 'ai_error') {
-            setAiPhase('error')
-            break
-          }
+        if (!ok) {
+          break
         }
+
+        if (data.done) {
+          setEnhancedCount(recommendationCount)
+          break
+        }
+
+        if (data.enhanced && data.recTitle) {
+          setEnhanceLabel(data.recTitle as string)
+        }
+
+        const { ok: statusOk, data: statusData } = await safeFetch('/api/analysis/status')
+        if (statusOk) {
+          setEnhancedCount(statusData.enhanced as number)
+        }
+
+        await new Promise(r => setTimeout(r, 500))
       }
 
       setCurrent(totalStages)
@@ -507,7 +503,7 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
     }
 
     run()
-  }, [useDemo, rulesStages, totalStages])
+  }, [useDemo, rulesStages, totalStages, recommendationCount])
 
   const handleGoToResults = useCallback(() => {
     onComplete(recommendationCount)
@@ -538,27 +534,38 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
                 {ANALYSIS_STAGES.map((label, i) => {
                   const isDone = i < current
                   const isOn = i === current
+                  const isAiStage = i === totalStages - 1
+                  const stageLabel = isAiStage && isOn && recommendationCount > 0
+                    ? `${label} · ${enhancedCount} из ${recommendationCount}`
+                    : label
                   return (
-                    <div key={i} className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 transition-all"
+                    <div key={i} className="flex flex-col gap-0.5 rounded-lg px-3 py-2.5 transition-all"
                       style={{
                         background: isDone ? 'var(--mm-green-bg)' : isOn ? 'var(--mm-white)' : 'transparent',
                         border: isOn ? '1px solid var(--mm-border)' : '1px solid transparent',
                         opacity: !isDone && !isOn ? 0.3 : 1,
                       }}>
-                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-                        style={{ background: isDone ? 'var(--mm-green)' : isOn ? 'var(--mm-green-bg)' : 'transparent' }}>
-                        {isDone ? (
-                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                            <path d="M2.5 5l2 2L7.5 3.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-                          </svg>
-                        ) : isOn ? (
-                          <div className="h-2 w-2 rounded-full" style={{ background: 'var(--mm-green)', animation: 'spin 1.2s linear infinite' }} />
-                        ) : null}
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                          style={{ background: isDone ? 'var(--mm-green)' : isOn ? 'var(--mm-green-bg)' : 'transparent' }}>
+                          {isDone ? (
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                              <path d="M2.5 5l2 2L7.5 3.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+                            </svg>
+                          ) : isOn ? (
+                            <div className="h-2 w-2 rounded-full" style={{ background: 'var(--mm-green)', animation: 'spin 1.2s linear infinite' }} />
+                          ) : null}
+                        </div>
+                        <span className="text-sm font-semibold"
+                          style={{ color: isDone ? 'var(--mm-green)' : isOn ? 'var(--mm-ink)' : 'var(--mm-muted)' }}>
+                          {stageLabel}
+                        </span>
                       </div>
-                      <span className="text-sm font-semibold"
-                        style={{ color: isDone ? 'var(--mm-green)' : isOn ? 'var(--mm-ink)' : 'var(--mm-muted)' }}>
-                        {label}
-                      </span>
+                      {isAiStage && isOn && enhanceLabel && (
+                        <div className="ml-[30px] truncate text-xs" style={{ color: 'var(--mm-muted)' }}>
+                          {enhanceLabel}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -619,27 +626,38 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
               {ANALYSIS_STAGES.map((label, i) => {
                 const isDone = i < current
                 const isOn = i === current
+                const isAiStage = i === totalStages - 1
+                const stageLabel = isAiStage && isOn && recommendationCount > 0
+                  ? `${label} · ${enhancedCount} из ${recommendationCount}`
+                  : label
                 return (
-                  <div key={i} className="flex items-center gap-3.5 rounded-xl px-4 py-3.5 transition-all"
+                  <div key={i} className="flex flex-col gap-1 rounded-xl px-4 py-3.5 transition-all"
                     style={{
                       background: isDone ? 'rgba(52,211,153,.1)' : isOn ? 'rgba(255,255,255,.06)' : 'transparent',
                       border: isOn ? '1px solid rgba(255,255,255,.08)' : '1px solid transparent',
                       opacity: !isDone && !isOn ? 0.25 : 1,
                     }}>
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-                      style={{ background: isDone ? '#34D399' : isOn ? 'rgba(52,211,153,.15)' : 'transparent' }}>
-                      {isDone ? (
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <path d="M4 7l2.5 2.5L10 5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-                        </svg>
-                      ) : isOn ? (
-                        <div className="h-3 w-3 rounded-full border-2" style={{ borderColor: '#34D399', animation: 'spin 1.2s linear infinite' }} />
-                      ) : null}
+                    <div className="flex items-center gap-3.5">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+                        style={{ background: isDone ? '#34D399' : isOn ? 'rgba(52,211,153,.15)' : 'transparent' }}>
+                        {isDone ? (
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M4 7l2.5 2.5L10 5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+                          </svg>
+                        ) : isOn ? (
+                          <div className="h-3 w-3 rounded-full border-2" style={{ borderColor: '#34D399', animation: 'spin 1.2s linear infinite' }} />
+                        ) : null}
+                      </div>
+                      <span className="text-base font-semibold"
+                        style={{ color: isDone ? '#34D399' : isOn ? '#fff' : 'rgba(255,255,255,.4)' }}>
+                        {stageLabel}
+                      </span>
                     </div>
-                    <span className="text-base font-semibold"
-                      style={{ color: isDone ? '#34D399' : isOn ? '#fff' : 'rgba(255,255,255,.4)' }}>
-                      {label}
-                    </span>
+                    {isAiStage && isOn && enhanceLabel && (
+                      <div className="ml-[42px] truncate text-sm" style={{ color: 'rgba(255,255,255,.35)' }}>
+                        {enhanceLabel}
+                      </div>
+                    )}
                   </div>
                 )
               })}

@@ -143,6 +143,12 @@ export const Recommendations: CollectionConfig = {
       defaultValue: false,
     },
     {
+      name: 'aiEnhanced',
+      type: 'checkbox',
+      label: 'Улучшено AI',
+      defaultValue: false,
+    },
+    {
       name: 'takenAt',
       type: 'date',
       label: 'Взята в работу',

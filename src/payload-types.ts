@@ -258,6 +258,7 @@ export interface Recommendation {
   recipient: string;
   isDemo?: boolean | null;
   isAiGenerated?: boolean | null;
+  aiEnhanced?: boolean | null;
   takenAt?: string | null;
   dueDate?: string | null;
   resolvedAt?: string | null;
@@ -619,6 +620,7 @@ export interface RecommendationsSelect<T extends boolean = true> {
   recipient?: T;
   isDemo?: T;
   isAiGenerated?: T;
+  aiEnhanced?: T;
   takenAt?: T;
   dueDate?: T;
   resolvedAt?: T;
