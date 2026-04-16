@@ -32,7 +32,6 @@ const ANALYSIS_STAGES = [
   'Расчёт метрик',
   'Проверка правил',
   'Формирование рекомендаций',
-  'AI улучшает рекомендации',
 ]
 
 const ACCOUNTS = [
@@ -561,11 +560,6 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
                           {stageLabel}
                         </span>
                       </div>
-                      {isAiStage && isOn && enhanceLabel && (
-                        <div className="ml-[30px] truncate text-xs" style={{ color: 'var(--mm-muted)' }}>
-                          {enhanceLabel}
-                        </div>
-                      )}
                     </div>
                   )
                 })}
@@ -653,11 +647,6 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
                         {stageLabel}
                       </span>
                     </div>
-                    {isAiStage && isOn && enhanceLabel && (
-                      <div className="ml-[42px] truncate text-sm" style={{ color: 'rgba(255,255,255,.35)' }}>
-                        {enhanceLabel}
-                      </div>
-                    )}
                   </div>
                 )
               })}
