@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { DEFAULT_PROMPTS } from '@/lib/ai/prompts'
+import { RULE_PROMPTS } from '@/lib/ai/rule-prompts'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +17,9 @@ export async function POST(request: NextRequest) {
     let created = 0
     let skipped = 0
 
-    for (const prompt of DEFAULT_PROMPTS) {
+    const allPrompts = [...DEFAULT_PROMPTS, ...RULE_PROMPTS]
+
+    for (const prompt of allPrompts) {
       const existing = await payload.find({
         collection: 'ai-prompts',
         where: { promptKey: { equals: prompt.promptKey } },
@@ -35,7 +38,7 @@ export async function POST(request: NextRequest) {
       created++
     }
 
-    return NextResponse.json({ ok: true, created, skipped })
+    return NextResponse.json({ ok: true, created, skipped, total: allPrompts.length })
   } catch (err) {
     console.error('[AI] Seed prompts error:', err)
     return NextResponse.json({ error: 'Failed' }, { status: 500 })

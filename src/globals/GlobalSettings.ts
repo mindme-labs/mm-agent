@@ -36,5 +36,46 @@ export const GlobalSettings: GlobalConfig = {
       label: 'Дней триала',
       defaultValue: 7,
     },
+    {
+      name: 'aiRulesEnabled',
+      type: 'checkbox',
+      label: 'AI-анализ правил включён',
+      defaultValue: false,
+      admin: {
+        description: 'Если выключено — все правила используют статические шаблоны',
+      },
+    },
+    {
+      name: 'aiRulesEnabledFor',
+      type: 'select',
+      label: 'Правила с AI-анализом',
+      hasMany: true,
+      defaultValue: ['ДЗ-1'],
+      options: [
+        { label: 'ДЗ-1 — Просроченная дебиторка', value: 'ДЗ-1' },
+        { label: 'ДЗ-2 — Концентрация дебиторов', value: 'ДЗ-2' },
+        { label: 'ДЗ-3 — Отток клиентов', value: 'ДЗ-3' },
+        { label: 'КЗ-1 — Незакрытые авансы', value: 'КЗ-1' },
+        { label: 'ЗАП-1 — Неликвид', value: 'ЗАП-1' },
+        { label: 'ЗАП-2 — Затоваривание', value: 'ЗАП-2' },
+        { label: 'ПЛ-1 — Снижение маржи', value: 'ПЛ-1' },
+        { label: 'ФЦ-1 — Платёжный цикл', value: 'ФЦ-1' },
+        { label: 'СВС-1 — Качество данных', value: 'СВС-1' },
+      ],
+      admin: {
+        description: 'Выберите, какие правила обогащать AI. Остальные используют шаблоны.',
+      },
+    },
+    {
+      name: 'aiRulesBatchSize',
+      type: 'number',
+      label: 'Размер батча AI-обогащения',
+      defaultValue: 3,
+      min: 1,
+      max: 10,
+      admin: {
+        description: 'Сколько кандидатов обрабатывается за один вызов /ai-enhance-batch (Vercel Hobby: 2-3, Pro: 5-8)',
+      },
+    },
   ],
 }

@@ -43,3 +43,19 @@ export interface GeneratedRecommendation {
   counterparty?: string
   recipient: string
 }
+
+export type RuleSignalValue = string | number | boolean
+
+export interface RuleCandidate {
+  ruleCode: string
+  ruleName: string
+  priorityHint: 'critical' | 'high' | 'medium' | 'low'
+  impactMetric: GeneratedRecommendation['impactMetric']
+  impactDirection: 'decrease' | 'increase'
+  impactAmount: number
+  sourceAccount: string
+  counterparty?: string
+  recipient: string
+  signals: Record<string, RuleSignalValue>
+  fallbackTemplateKey?: string
+}

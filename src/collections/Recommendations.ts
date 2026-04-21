@@ -149,6 +149,24 @@ export const Recommendations: CollectionConfig = {
       defaultValue: false,
     },
     {
+      name: 'signals',
+      type: 'json',
+      label: 'Сигналы правила (для AI)',
+      admin: { description: 'Структурированные данные для AI-анализа кандидата' },
+    },
+    {
+      name: 'aiEnhanceFailedAt',
+      type: 'date',
+      label: 'Последняя ошибка AI',
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'aiEnhanceError',
+      type: 'text',
+      label: 'Код ошибки AI',
+      admin: { position: 'sidebar' },
+    },
+    {
       name: 'takenAt',
       type: 'date',
       label: 'Взята в работу',

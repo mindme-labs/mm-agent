@@ -18,30 +18,63 @@ export async function GET() {
     })
 
     if (result.docs.length === 0) {
-      return NextResponse.json({ phase: 'none', total: 0, enhanced: 0, remaining: 0 })
+      return NextResponse.json({
+        phase: 'none',
+        total: 0,
+        enhanced: 0,
+        remaining: 0,
+        failed: 0,
+      })
     }
 
     const analysis = result.docs[0]
 
-    const [totalResult, enhancedResult] = await Promise.all([
+    const [totalResult, enhancedResult, failedResult] = await Promise.all([
       payload.count({
         collection: 'recommendations',
         where: { owner: { equals: user.id }, status: { equals: 'new' } },
       }),
       payload.count({
         collection: 'recommendations',
-        where: { owner: { equals: user.id }, status: { equals: 'new' }, aiEnhanced: { equals: true } },
+        where: {
+          owner: { equals: user.id },
+          status: { equals: 'new' },
+          aiEnhanced: { equals: true },
+        },
+      }),
+      payload.count({
+        collection: 'recommendations',
+        where: {
+          owner: { equals: user.id },
+          status: { equals: 'new' },
+          aiEnhanced: { not_equals: true },
+          aiEnhanceFailedAt: { exists: true },
+        },
       }),
     ])
 
+    const total = totalResult.totalDocs
+    const enhanced = enhancedResult.totalDocs
+    const failed = failedResult.totalDocs
+    const remaining = total - enhanced
+
     return NextResponse.json({
       phase: analysis.analysisPhase ?? 'rules_done',
-      total: totalResult.totalDocs,
-      enhanced: enhancedResult.totalDocs,
-      remaining: totalResult.totalDocs - enhancedResult.totalDocs,
+      analysisId: analysis.id,
+      total,
+      enhanced,
+      remaining,
+      failed,
+      done: remaining === 0,
     })
   } catch (err) {
     console.error('[Analysis Status] Error:', err)
-    return NextResponse.json({ phase: 'error', total: 0, enhanced: 0, remaining: 0 }, { status: 500 })
+    return NextResponse.json({
+      phase: 'error',
+      total: 0,
+      enhanced: 0,
+      remaining: 0,
+      failed: 0,
+    }, { status: 500 })
   }
 }

@@ -259,6 +259,20 @@ export interface Recommendation {
   isDemo?: boolean | null;
   isAiGenerated?: boolean | null;
   aiEnhanced?: boolean | null;
+  /**
+   * Структурированные данные для AI-анализа кандидата
+   */
+  signals?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  aiEnhanceFailedAt?: string | null;
+  aiEnhanceError?: string | null;
   takenAt?: string | null;
   dueDate?: string | null;
   resolvedAt?: string | null;
@@ -621,6 +635,9 @@ export interface RecommendationsSelect<T extends boolean = true> {
   isDemo?: T;
   isAiGenerated?: T;
   aiEnhanced?: T;
+  signals?: T;
+  aiEnhanceFailedAt?: T;
+  aiEnhanceError?: T;
   takenAt?: T;
   dueDate?: T;
   resolvedAt?: T;
@@ -785,6 +802,18 @@ export interface GlobalSetting {
   aiProvider?: ('anthropic' | 'openai') | null;
   aiModel?: string | null;
   trialDays?: number | null;
+  /**
+   * Если выключено — все правила используют статические шаблоны
+   */
+  aiRulesEnabled?: boolean | null;
+  /**
+   * Выберите, какие правила обогащать AI. Остальные используют шаблоны.
+   */
+  aiRulesEnabledFor?: ('ДЗ-1' | 'ДЗ-2' | 'ДЗ-3' | 'КЗ-1' | 'ЗАП-1' | 'ЗАП-2' | 'ПЛ-1' | 'ФЦ-1' | 'СВС-1')[] | null;
+  /**
+   * Сколько кандидатов обрабатывается за один вызов /ai-enhance-batch (Vercel Hobby: 2-3, Pro: 5-8)
+   */
+  aiRulesBatchSize?: number | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -797,6 +826,9 @@ export interface GlobalSettingsSelect<T extends boolean = true> {
   aiProvider?: T;
   aiModel?: T;
   trialDays?: T;
+  aiRulesEnabled?: T;
+  aiRulesEnabledFor?: T;
+  aiRulesBatchSize?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
