@@ -77,5 +77,36 @@ export const GlobalSettings: GlobalConfig = {
         description: 'Сколько кандидатов обрабатывается за один вызов /ai-enhance-batch (Vercel Hobby: 2-3, Pro: 5-8)',
       },
     },
+    {
+      name: 'aiFileExtractionEnabled',
+      type: 'checkbox',
+      label: 'AI-распознавание файлов включено',
+      defaultValue: false,
+      admin: {
+        description: 'Если выключено — нестандартные форматы CSV отбрасываются с предупреждением, как раньше',
+      },
+    },
+    {
+      name: 'aiFileExtractionMaxKB',
+      type: 'number',
+      label: 'Лимит размера файла для AI-извлечения, КБ',
+      defaultValue: 100,
+      min: 10,
+      max: 500,
+      admin: {
+        description: 'Файлы больше лимита будут обрезаны перед отправкой в AI (Phase 2)',
+      },
+    },
+    {
+      name: 'aiFileBatchSize',
+      type: 'number',
+      label: 'Размер батча AI-распознавания файлов',
+      defaultValue: 2,
+      min: 1,
+      max: 5,
+      admin: {
+        description: 'Файлов на один вызов /api/files/ai-recognize-batch (Vercel Hobby: 2, Pro: 3-5)',
+      },
+    },
   ],
 }

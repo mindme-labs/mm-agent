@@ -204,7 +204,18 @@ export interface UploadedFile {
   detectedType?: string | null;
   accountCode?: string | null;
   period?: string | null;
-  parseStatus?: ('pending' | 'recognizing' | 'parsing' | 'success' | 'warning' | 'error') | null;
+  parseStatus?:
+    | (
+        | 'pending'
+        | 'recognizing'
+        | 'parsing'
+        | 'needs_ai_recognition'
+        | 'needs_ai_extraction'
+        | 'success'
+        | 'warning'
+        | 'error'
+      )
+    | null;
   parseErrors?:
     | {
         [k: string]: unknown;
@@ -814,6 +825,18 @@ export interface GlobalSetting {
    * Сколько кандидатов обрабатывается за один вызов /ai-enhance-batch (Vercel Hobby: 2-3, Pro: 5-8)
    */
   aiRulesBatchSize?: number | null;
+  /**
+   * Если выключено — нестандартные форматы CSV отбрасываются с предупреждением, как раньше
+   */
+  aiFileExtractionEnabled?: boolean | null;
+  /**
+   * Файлы больше лимита будут обрезаны перед отправкой в AI (Phase 2)
+   */
+  aiFileExtractionMaxKB?: number | null;
+  /**
+   * Файлов на один вызов /api/files/ai-recognize-batch (Vercel Hobby: 2, Pro: 3-5)
+   */
+  aiFileBatchSize?: number | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -829,6 +852,9 @@ export interface GlobalSettingsSelect<T extends boolean = true> {
   aiRulesEnabled?: T;
   aiRulesEnabledFor?: T;
   aiRulesBatchSize?: T;
+  aiFileExtractionEnabled?: T;
+  aiFileExtractionMaxKB?: T;
+  aiFileBatchSize?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

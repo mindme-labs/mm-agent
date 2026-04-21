@@ -39,7 +39,7 @@ function isSkipLine(value: string): boolean {
     v.startsWith('Номенклатурные') || v.startsWith('Договоры')
 }
 
-function parse7ColFile(lines: string[], accountCode: string): ParsedEntity[] {
+export function parse7ColFile(lines: string[], accountCode: string): ParsedEntity[] {
   const entities: ParsedEntity[] = []
   let currentEntity: ParsedEntity | null = null
 
@@ -93,7 +93,7 @@ function parse7ColFile(lines: string[], accountCode: string): ParsedEntity[] {
   return entities
 }
 
-function parse8ColFile(lines: string[], accountCode: string): ParsedEntity[] {
+export function parse8ColFile(lines: string[], accountCode: string): ParsedEntity[] {
   const entities: ParsedEntity[] = []
   let currentEntity: ParsedEntity | null = null
 
@@ -163,7 +163,7 @@ function parse8ColFile(lines: string[], accountCode: string): ParsedEntity[] {
   return entities
 }
 
-function parseTotals7Col(lines: string[], accountCode: string): AccountTotals {
+export function parseTotals7Col(lines: string[], accountCode: string): AccountTotals {
   for (const line of lines) {
     const cols = line.split(';')
     const first = (cols[0] || '').trim()
@@ -181,7 +181,7 @@ function parseTotals7Col(lines: string[], accountCode: string): AccountTotals {
   return { openingDebit: 0, openingCredit: 0, turnoverDebit: 0, turnoverCredit: 0, closingDebit: 0, closingCredit: 0 }
 }
 
-function parseTotals8Col(lines: string[], accountCode: string): AccountTotals {
+export function parseTotals8Col(lines: string[], accountCode: string): AccountTotals {
   for (const line of lines) {
     const cols = line.split(';')
     const first = (cols[0] || '').trim()

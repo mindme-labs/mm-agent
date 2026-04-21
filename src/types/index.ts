@@ -44,6 +44,32 @@ export interface GeneratedRecommendation {
   recipient: string
 }
 
+export interface UploadedFileParsedData {
+  raw: string
+  parsed?: ParsedAccountData
+  aiParsed?: ParsedAccountData
+  aiHints?: AIFileHints
+  truncated?: boolean
+  truncatedAtBytes?: number
+}
+
+export interface AIFileHints {
+  accountCode: string
+  period: string
+  documentType: string
+  columnFormat?: '7-col' | '8-col' | 'unknown'
+}
+
+export interface AIRecognitionLog {
+  attemptedAt: string
+  promptKey: 'file_recognition' | 'data_extraction'
+  success: boolean
+  durationMs: number
+  inputBytes: number
+  rawResponse?: string
+  error?: string
+}
+
 export type RuleSignalValue = string | number | boolean
 
 export interface RuleCandidate {

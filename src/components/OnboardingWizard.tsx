@@ -27,12 +27,18 @@ const HOW_IT_WORKS = [
 ]
 
 const ANALYSIS_STAGES = [
-  'Распознавание файлов',
-  'Извлечение данных',
+  'AI-распознавание файлов',
+  'AI-извлечение данных',
   'Расчёт метрик',
   'Проверка правил',
   'Формирование рекомендаций',
 ]
+
+const STAGE_RECOGNITION = 0
+const STAGE_EXTRACTION = 1
+const STAGE_METRICS = 2
+const STAGE_RULES = 3
+const STAGE_AI_ENHANCE = 4
 
 const ACCOUNTS = [
   { code: 'сч. 10', name: 'Материалы' },
@@ -61,8 +67,37 @@ const FILE_STATUS_CONFIG: Record<string, { label: string; bg: string; color: str
   pending: { label: 'Готов', bg: 'var(--mm-green-bg)', color: 'var(--mm-green)' },
   uploading: { label: 'Загрузка...', bg: 'var(--mm-amber-bg)', color: 'var(--mm-amber)' },
   success: { label: 'Готов', bg: 'var(--mm-green-bg)', color: 'var(--mm-green)' },
+  needs_ai_recognition: { label: 'AI-распознавание', bg: 'var(--mm-amber-bg)', color: 'var(--mm-amber)' },
   warning: { label: 'Не распознан', bg: 'var(--mm-amber-bg)', color: 'var(--mm-amber)' },
   error: { label: 'Ошибка', bg: 'var(--mm-red-bg)', color: 'var(--mm-red)' },
+}
+
+interface StageProgressData {
+  recommendationCount: number
+  enhancedCount: number
+  filesNeedingAi: number
+  filesRecovered: number
+  filesNeedingExtraction: number
+  filesExtracted: number
+}
+
+function stageLabelWithProgress(
+  label: string,
+  stageIndex: number,
+  d: StageProgressData,
+  isActive: boolean,
+): string {
+  if (!isActive) return label
+  if (stageIndex === STAGE_RECOGNITION && d.filesNeedingAi > 0) {
+    return `${label} · ${d.filesRecovered} из ${d.filesNeedingAi}`
+  }
+  if (stageIndex === STAGE_EXTRACTION && d.filesNeedingExtraction > 0) {
+    return `${label} · ${d.filesExtracted} из ${d.filesNeedingExtraction}`
+  }
+  if (stageIndex === STAGE_AI_ENHANCE && d.recommendationCount > 0) {
+    return `${label} · ${d.enhancedCount} из ${d.recommendationCount}`
+  }
+  return label
 }
 
 // ─── Start Screen ──────────────────────────────────────────────────────────────
@@ -434,75 +469,136 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
   const [done, setDone] = useState(false)
   const [recommendationCount, setRecommendationCount] = useState(0)
   const [enhancedCount, setEnhancedCount] = useState(0)
-  const [enhanceLabel, setEnhanceLabel] = useState('')
+  const [filesNeedingAi, setFilesNeedingAi] = useState(0)
+  const [filesRecovered, setFilesRecovered] = useState(0)
+  const [filesNeedingExtraction, setFilesNeedingExtraction] = useState(0)
+  const [filesExtracted, setFilesExtracted] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const running = useRef(false)
 
-  const totalStages = ANALYSIS_STAGES.length
-  const rulesStages = totalStages - 1
-  const progress = done ? 100 : Math.round(((Math.min(current + 1, totalStages)) / totalStages) * 100)
+  const visibleStages = useDemo
+    ? ANALYSIS_STAGES.slice(STAGE_METRICS) // demo skips file recognition / extraction
+    : ANALYSIS_STAGES
+  const visibleStagesCount = visibleStages.length
+  const indexOffset = useDemo ? STAGE_METRICS : 0
+  const visibleCurrent = current - indexOffset
+  const progress = done ? 100 : Math.round(((Math.min(visibleCurrent + 1, visibleStagesCount)) / visibleStagesCount) * 100)
 
   useEffect(() => {
     if (running.current) return
     running.current = true
 
     const run = async () => {
-      for (let i = 0; i < rulesStages; i++) {
-        setCurrent(i)
-        if (i === rulesStages - 1) {
-          const endpoint = useDemo ? '/api/demo/seed' : '/api/analysis/run'
-          const { ok, data } = await safeFetch(endpoint, { method: 'POST' })
-          if (!ok) {
-            setError((data.error as string) || 'Ошибка анализа')
-            running.current = false
-            return
-          }
-          setRecommendationCount(data.recommendationCount as number)
-        } else {
-          await new Promise(r => setTimeout(r, useDemo ? 1200 : 600))
-        }
-      }
-
+      // === Demo path: skip file recognition/extraction ===
       if (useDemo) {
-        setCurrent(totalStages)
+        setCurrent(STAGE_METRICS)
+        await new Promise(r => setTimeout(r, 800))
+        setCurrent(STAGE_RULES)
+
+        const { ok, data } = await safeFetch('/api/demo/seed', { method: 'POST' })
+        if (!ok) {
+          setError((data.error as string) || 'Ошибка анализа')
+          running.current = false
+          return
+        }
+        setRecommendationCount((data.recommendationCount as number) ?? (data.total as number) ?? 0)
+        setCurrent(STAGE_AI_ENHANCE + 1)
         await new Promise(r => setTimeout(r, 300))
         setDone(true)
         return
       }
 
-      setCurrent(rulesStages)
+      // === Real path: file recognition (Phase 1) ===
+      const initialStatus = await safeFetch('/api/files/status')
+      if (initialStatus.ok) {
+        const needsRec = (initialStatus.data.needsRecognition as number) ?? 0
+        const needsExt = (initialStatus.data.needsExtraction as number) ?? 0
+        setFilesNeedingAi(needsRec)
+        setFilesNeedingExtraction(needsExt)
 
-      for (let attempt = 0; attempt < 30; attempt++) {
-        const { ok, data } = await safeFetch('/api/analysis/ai-enhance', { method: 'POST' })
-
-        if (!ok) {
-          break
+        if (needsRec > 0) {
+          setCurrent(STAGE_RECOGNITION)
+          for (let attempt = 0; attempt < 20; attempt++) {
+            const { ok, data } = await safeFetch('/api/files/ai-recognize-batch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({}),
+            })
+            if (!ok) break
+            const recovered = (data.recovered as number) ?? 0
+            setFilesRecovered((prev) => prev + recovered)
+            const status = await safeFetch('/api/files/status')
+            if (status.ok) {
+              setFilesNeedingExtraction((status.data.needsExtraction as number) ?? 0)
+            }
+            if (data.done) break
+            if ((data.processed as number) === 0) break
+            await new Promise(r => setTimeout(r, 300))
+          }
         }
-
-        if (data.done) {
-          setEnhancedCount(recommendationCount)
-          break
-        }
-
-        if (data.enhanced && data.recTitle) {
-          setEnhanceLabel(data.recTitle as string)
-        }
-
-        const { ok: statusOk, data: statusData } = await safeFetch('/api/analysis/status')
-        if (statusOk) {
-          setEnhancedCount(statusData.enhanced as number)
-        }
-
-        await new Promise(r => setTimeout(r, 500))
       }
 
-      setCurrent(totalStages)
+      // === File extraction (Phase 2) — one file at a time ===
+      const extractionStatus = await safeFetch('/api/files/status')
+      const stillNeedExtraction = extractionStatus.ok
+        ? (extractionStatus.data.needsExtraction as number) ?? 0
+        : 0
+
+      if (stillNeedExtraction > 0) {
+        setFilesNeedingExtraction(stillNeedExtraction)
+        setCurrent(STAGE_EXTRACTION)
+        for (let attempt = 0; attempt < 15; attempt++) {
+          const { ok, data } = await safeFetch('/api/files/ai-extract-next', { method: 'POST' })
+          if (!ok) break
+          if (data.done) break
+          if ((data.processed as boolean) === true) {
+            setFilesExtracted((prev) => prev + 1)
+          }
+          await new Promise(r => setTimeout(r, 300))
+        }
+      }
+
+      // === Metrics + rules + persist (single backend call) ===
+      setCurrent(STAGE_METRICS)
+      await new Promise(r => setTimeout(r, 400))
+      setCurrent(STAGE_RULES)
+
+      const { ok: runOk, data: runData } = await safeFetch('/api/analysis/run', { method: 'POST' })
+      if (!runOk) {
+        setError((runData.error as string) || 'Ошибка анализа')
+        running.current = false
+        return
+      }
+      const total = (runData.total as number) ?? (runData.recommendationCount as number) ?? 0
+      setRecommendationCount(total)
+
+      // === AI enhancement (chunked batch polling) ===
+      setCurrent(STAGE_AI_ENHANCE)
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const { ok, data } = await safeFetch('/api/analysis/ai-enhance-batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        })
+        if (!ok) break
+
+        const status = await safeFetch('/api/analysis/status')
+        if (status.ok) {
+          setEnhancedCount((status.data.enhanced as number) ?? 0)
+        }
+
+        if (data.done) break
+        if ((data.processed as number) === 0 && (data.failed as number) === 0) break
+        await new Promise(r => setTimeout(r, 300))
+      }
+
+      setCurrent(STAGE_AI_ENHANCE + 1)
       await new Promise(r => setTimeout(r, 300))
       setDone(true)
     }
 
     run()
-  }, [useDemo, rulesStages, totalStages, recommendationCount])
+  }, [useDemo])
 
   const handleGoToResults = useCallback(() => {
     onComplete(recommendationCount)
@@ -530,13 +626,18 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
               </div>
 
               <div className="flex flex-col gap-1.5 text-left">
-                {ANALYSIS_STAGES.map((label, i) => {
+                {visibleStages.map((label, vi) => {
+                  const i = vi + indexOffset
                   const isDone = i < current
                   const isOn = i === current
-                  const isAiStage = i === totalStages - 1
-                  const stageLabel = isAiStage && isOn && recommendationCount > 0
-                    ? `${label} · ${enhancedCount} из ${recommendationCount}`
-                    : label
+                  const stageLabel = stageLabelWithProgress(label, i, {
+                    recommendationCount,
+                    enhancedCount,
+                    filesNeedingAi,
+                    filesRecovered,
+                    filesNeedingExtraction,
+                    filesExtracted,
+                  }, isOn)
                   return (
                     <div key={i} className="flex flex-col gap-0.5 rounded-lg px-3 py-2.5 transition-all"
                       style={{
@@ -617,13 +718,18 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
 
           {!done && (
             <div className="flex flex-col gap-2">
-              {ANALYSIS_STAGES.map((label, i) => {
+              {visibleStages.map((label, vi) => {
+                const i = vi + indexOffset
                 const isDone = i < current
                 const isOn = i === current
-                const isAiStage = i === totalStages - 1
-                const stageLabel = isAiStage && isOn && recommendationCount > 0
-                  ? `${label} · ${enhancedCount} из ${recommendationCount}`
-                  : label
+                const stageLabel = stageLabelWithProgress(label, i, {
+                  recommendationCount,
+                  enhancedCount,
+                  filesNeedingAi,
+                  filesRecovered,
+                  filesNeedingExtraction,
+                  filesExtracted,
+                }, isOn)
                 return (
                   <div key={i} className="flex flex-col gap-1 rounded-xl px-4 py-3.5 transition-all"
                     style={{

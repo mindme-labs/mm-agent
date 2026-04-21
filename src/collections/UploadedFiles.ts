@@ -56,6 +56,8 @@ export const UploadedFiles: CollectionConfig = {
         { label: 'Ожидание', value: 'pending' },
         { label: 'Распознавание', value: 'recognizing' },
         { label: 'Парсинг', value: 'parsing' },
+        { label: 'Нужно AI-распознавание', value: 'needs_ai_recognition' },
+        { label: 'Нужно AI-извлечение', value: 'needs_ai_extraction' },
         { label: 'Успешно', value: 'success' },
         { label: 'Предупреждение', value: 'warning' },
         { label: 'Ошибка', value: 'error' },

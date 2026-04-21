@@ -8,7 +8,7 @@ import { calculateMetrics } from '@/lib/rules/metrics'
 import { fallbackForCandidate } from '@/lib/rules/fallback-templates'
 import { loadAnalyzerSettings } from '@/lib/ai/rule-analyzer'
 import { logEvent } from '@/lib/logger'
-import type { ParsedAccountData } from '@/types'
+import type { ParsedAccountData, UploadedFileParsedData } from '@/types'
 
 export async function POST() {
   try {
@@ -32,8 +32,26 @@ export async function POST() {
     const parseErrors: string[] = []
 
     for (const doc of filesResult.docs) {
-      const rawData = doc.parsedData as { raw?: string } | string | null
-      const content = typeof rawData === 'string' ? rawData : rawData?.raw ?? null
+      // Skip files that are still queued for AI work — they'll be picked up
+      // on a subsequent /api/analysis/run after recognition completes.
+      if (doc.parseStatus === 'needs_ai_recognition' || doc.parseStatus === 'needs_ai_extraction') {
+        continue
+      }
+
+      const stored = (doc.parsedData ?? {}) as UploadedFileParsedData | { raw?: string } | string | null
+      const storedObj = typeof stored === 'object' && stored !== null ? (stored as UploadedFileParsedData) : null
+
+      // Prefer cached deterministic parse, then AI extraction, then re-attempt regex.
+      if (storedObj?.parsed) {
+        parsedData.push(storedObj.parsed)
+        continue
+      }
+      if (storedObj?.aiParsed) {
+        parsedData.push(storedObj.aiParsed)
+        continue
+      }
+
+      const content = typeof stored === 'string' ? stored : storedObj?.raw ?? null
       if (!content) continue
 
       try {
@@ -133,6 +151,8 @@ export async function POST() {
       ok: true,
       analysisId: analysisDoc.id,
       total: candidates.length,
+      // Backward-compat alias for older clients still expecting `recommendationCount`.
+      recommendationCount: candidates.length,
       pendingAi,
       prefilled,
       filesProcessed: parsedData.length,
