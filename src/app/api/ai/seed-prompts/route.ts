@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { getCurrentUser } from '@/lib/auth'
 import { DEFAULT_PROMPTS } from '@/lib/ai/prompts'
 import { RULE_PROMPTS } from '@/lib/ai/rule-prompts'
 
@@ -18,16 +19,25 @@ import { RULE_PROMPTS } from '@/lib/ai/rule-prompts'
  *     in-code value, whichever is higher).
  *
  * Always seeds both `DEFAULT_PROMPTS` and `RULE_PROMPTS`.
+ *
+ * Auth: uses the same `getCurrentUser()` helper as every other custom route in
+ * the app (which understands the `payload-token` cookie issued by
+ * `/api/auth/login`). Do NOT use `payload.auth({ headers })` here — that
+ * verifier only recognizes cookies issued by Payload's built-in admin login,
+ * not the custom JWTs we mint for the user-facing app.
  */
 export async function POST(request: NextRequest) {
   try {
-    const payload = await getPayload({ config })
+    const user = await getCurrentUser()
 
-    const { user } = await payload.auth({ headers: request.headers })
-
-    if (!user || user.role !== 'admin') {
+    if (!user) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+    if (user.role !== 'admin') {
       return NextResponse.json({ error: 'Admin only' }, { status: 403 })
     }
+
+    const payload = await getPayload({ config })
 
     const url = new URL(request.url)
     const upsert = url.searchParams.get('upsert') === 'true'
