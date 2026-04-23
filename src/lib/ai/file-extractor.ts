@@ -49,6 +49,10 @@ export interface AIIdentifyResult {
   error?: string
   durationMs: number
   rawResponse?: string
+  promptVersion?: number
+  model?: string
+  inputTokens?: number
+  outputTokens?: number
 }
 
 export async function aiIdentifyFile(
@@ -77,9 +81,16 @@ export async function aiIdentifyFile(
     return { hints: null, error: 'ai_timeout_or_unavailable', durationMs }
   }
 
+  const meta = {
+    promptVersion: result.promptVersion,
+    model: result.model,
+    inputTokens: result.inputTokens,
+    outputTokens: result.outputTokens,
+  }
+
   const json = result.text.match(/\{[\s\S]*?\}/)?.[0]
   if (!json) {
-    return { hints: null, error: 'no_json_in_response', durationMs, rawResponse: result.text.slice(0, 500) }
+    return { hints: null, error: 'no_json_in_response', durationMs, rawResponse: result.text.slice(0, 500), ...meta }
   }
 
   try {
@@ -88,7 +99,7 @@ export async function aiIdentifyFile(
     const period = typeof parsed.period === 'string' ? parsed.period.trim() : null
 
     if (!accountCode || !period) {
-      return { hints: null, error: 'missing_account_or_period', durationMs, rawResponse: json }
+      return { hints: null, error: 'missing_account_or_period', durationMs, rawResponse: json, ...meta }
     }
 
     const columnFormat = parseColumnFormat(parsed.columnFormat)
@@ -102,6 +113,7 @@ export async function aiIdentifyFile(
       },
       durationMs,
       rawResponse: json,
+      ...meta,
     }
   } catch (err) {
     return {
@@ -109,6 +121,7 @@ export async function aiIdentifyFile(
       error: err instanceof Error ? err.message : 'json_parse_failed',
       durationMs,
       rawResponse: json,
+      ...meta,
     }
   }
 }
@@ -125,6 +138,10 @@ export interface AIExtractResult {
   truncated: boolean
   truncatedAtBytes?: number
   rawResponse?: string
+  promptVersion?: number
+  model?: string
+  inputTokens?: number
+  outputTokens?: number
 }
 
 export async function aiExtractData(
@@ -168,6 +185,13 @@ export async function aiExtractData(
     }
   }
 
+  const meta = {
+    promptVersion: result.promptVersion,
+    model: result.model,
+    inputTokens: result.inputTokens,
+    outputTokens: result.outputTokens,
+  }
+
   const json = result.text.match(/\{[\s\S]*\}/)?.[0]
   if (!json) {
     return {
@@ -177,6 +201,7 @@ export async function aiExtractData(
       truncated,
       truncatedAtBytes: truncated ? maxBytes : undefined,
       rawResponse: result.text.slice(0, 500),
+      ...meta,
     }
   }
 
@@ -189,6 +214,7 @@ export async function aiExtractData(
         durationMs,
         truncated,
         truncatedAtBytes: truncated ? maxBytes : undefined,
+        ...meta,
       }
     }
 
@@ -201,6 +227,7 @@ export async function aiExtractData(
         truncated,
         truncatedAtBytes: truncated ? maxBytes : undefined,
         rawResponse: json.slice(0, 500),
+        ...meta,
       }
     }
 
@@ -209,6 +236,7 @@ export async function aiExtractData(
       durationMs,
       truncated,
       truncatedAtBytes: truncated ? maxBytes : undefined,
+      ...meta,
     }
   } catch (err) {
     return {
@@ -218,6 +246,7 @@ export async function aiExtractData(
       truncated,
       truncatedAtBytes: truncated ? maxBytes : undefined,
       rawResponse: json.slice(0, 500),
+      ...meta,
     }
   }
 }

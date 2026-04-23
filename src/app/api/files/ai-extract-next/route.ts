@@ -88,9 +88,13 @@ export async function POST() {
     const log: AIRecognitionLog = {
       attemptedAt: new Date().toISOString(),
       promptKey: 'data_extraction',
+      promptVersion: result.promptVersion,
+      model: result.model,
       success: !!result.parsed,
       durationMs: result.durationMs,
       inputBytes: Buffer.byteLength(content, 'utf-8'),
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
       rawResponse: result.rawResponse,
       error: result.error,
     }

@@ -14,6 +14,7 @@ export interface AICallResult {
   inputTokens: number
   outputTokens: number
   model: string
+  promptVersion: number
   durationMs: number
   fromAI: boolean
 }
@@ -43,6 +44,7 @@ async function loadPrompt(promptKey: string): Promise<{
   systemPrompt: string
   userPromptTemplate: string | null
   model: string
+  version: number
 } | null> {
   try {
     const payload = await getPayload({ config })
@@ -65,6 +67,7 @@ async function loadPrompt(promptKey: string): Promise<{
       systemPrompt: prompt.systemPrompt,
       userPromptTemplate: prompt.userPromptTemplate ?? null,
       model: (settings.aiModel as string) || 'claude-sonnet-4-6',
+      version: typeof prompt.version === 'number' ? prompt.version : 1,
     }
   } catch {
     return null
@@ -127,6 +130,7 @@ export async function callAI(options: AICallOptions): Promise<AICallResult | nul
 
   await logAIEvent(userId, 'ai.request', {
     promptKey,
+    promptVersion: prompt.version,
     model: prompt.model,
   })
 
@@ -149,6 +153,7 @@ export async function callAI(options: AICallOptions): Promise<AICallResult | nul
       inputTokens: response.usage.input_tokens,
       outputTokens: response.usage.output_tokens,
       model: prompt.model,
+      promptVersion: prompt.version,
       durationMs,
       fromAI: true,
     }
@@ -157,6 +162,7 @@ export async function callAI(options: AICallOptions): Promise<AICallResult | nul
 
     await logAIEvent(userId, 'ai.response', {
       promptKey,
+      promptVersion: prompt.version,
       model: prompt.model,
       inputTokens: result.inputTokens,
       outputTokens: result.outputTokens,

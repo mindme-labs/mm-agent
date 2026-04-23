@@ -63,9 +63,13 @@ export interface AIFileHints {
 export interface AIRecognitionLog {
   attemptedAt: string
   promptKey: 'file_recognition' | 'data_extraction'
+  promptVersion?: number
+  model?: string
   success: boolean
   durationMs: number
   inputBytes: number
+  inputTokens?: number
+  outputTokens?: number
   rawResponse?: string
   error?: string
 }

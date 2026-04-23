@@ -140,9 +140,13 @@ async function recognizeOne(
   const log: AIRecognitionLog = {
     attemptedAt: new Date().toISOString(),
     promptKey: 'file_recognition',
+    promptVersion: recognition.promptVersion,
+    model: recognition.model,
     success: !!recognition.hints,
     durationMs: recognition.durationMs,
     inputBytes: Buffer.byteLength(content, 'utf-8'),
+    inputTokens: recognition.inputTokens,
+    outputTokens: recognition.outputTokens,
     rawResponse: recognition.rawResponse,
     error: recognition.error,
   }
