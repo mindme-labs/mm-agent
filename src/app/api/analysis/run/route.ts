@@ -7,6 +7,8 @@ import { isLegacyCandidate, legacyCandidateToRecommendation, runRulesEngine } fr
 import { calculateMetrics } from '@/lib/rules/metrics'
 import { fallbackForCandidate } from '@/lib/rules/fallback-templates'
 import { loadAnalyzerSettings } from '@/lib/ai/rule-analyzer'
+import { getAllowedRules } from '@/lib/classification/rule-allowlist'
+import type { BusinessModel } from '@/lib/classification/matrix'
 import { logEvent } from '@/lib/logger'
 import type { ParsedAccountData, UploadedFileParsedData } from '@/types'
 
@@ -67,7 +69,24 @@ export async function POST() {
       }, { status: 400 })
     }
 
-    const candidates = runRulesEngine(parsedData)
+    // v3.3.1 — read businessModel from the most recent draft analysis-results
+    // (created by /api/analysis/classify in iter-19). When no draft exists,
+    // fall back to safe default 'trading' which means all 9 rules run — same
+    // behavior as v3.2.
+    const draftResult = await payload.find({
+      collection: 'analysis-results',
+      where: { owner: { equals: user.id } },
+      sort: '-createdAt',
+      limit: 1,
+    })
+    const businessModel: BusinessModel =
+      (draftResult.docs[0]?.businessModel as BusinessModel | undefined) ?? 'trading'
+    const allowedRules = getAllowedRules(businessModel)
+    console.log(
+      `[Analysis] businessModel=${businessModel}, applying ${allowedRules.size} of 9 rules`,
+    )
+
+    const candidates = runRulesEngine(parsedData, allowedRules)
     const metrics = calculateMetrics(parsedData)
     const settings = await loadAnalyzerSettings()
 
