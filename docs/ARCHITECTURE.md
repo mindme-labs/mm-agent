@@ -1,12 +1,13 @@
 # MMLabs AI-Advisor — Product Architecture
 
-**Document version:** 1.1
-**Date:** April 25, 2026 (revised; original draft April 16, 2026)
+**Document version:** 1.2
+**Date:** May 4, 2026 (revised; original draft April 16, 2026)
 **Audience:** Chief Technical Manager — detailed technical review
 **Repository:** `mindme-labs/mm-agent`
 
 **Revision history:**
 
+- **v1.2 — 2026-05-04.** Documents v3.3.1 product spec (business model classification + adaptive onboarding). Updates Section 5 (new classification fields in `analysis-results`, new `wizardState` in `users`, new `onboarding-funnel-events` collection, new global settings), Section 6 (new endpoints for classification flow + admin funnel API), Section 7 (new onboarding screens + wizard state machine), Section 9 (new `business_model_classification` prompt + classification matrix in code), Section 10 (rule allowlist by business model), Section 11 (updated pipeline with classification stage + 3-way fork at low confidence), Section 13 (analytics layer: funnel events collection + admin dashboard).
 - **v1.1 — 2026-04-25.** Documents shipped v4 (AI-augmented rules pipeline, pilot for `ДЗ-1`) and v5 (AI-based file transformation pipeline). Updates Sections 5 (collections), 6 (API endpoints + service layer), 9 (AI subsystem), 10 (rules engine — candidate-first contract), 11 (data pipeline — chunked client-polled flow). See `docs/dev-history.md` entries v4 and v5 for ship logs.
 - **v1.0 — 2026-04-16.** Original draft generated from a direct analysis of the repository source code.
 
@@ -226,104 +227,193 @@ The system is a **monolithic Next.js application** with an embedded Payload CMS 
 
 ### Entity Relationship Diagram
 
-```
-┌──────────────┐       ┌──────────────────┐       ┌─────────────────────┐
-│    Users      │──1:N──│  UploadedFiles   │       │   InviteCodes       │
-│              │       │                  │       │                     │
-│  id          │       │  owner ──────────│──FK──▶│  code (unique)      │
-│  email       │       │  originalName    │       │  createdBy ────FK──▶│Users
-│  name        │       │  accountCode     │       │  usedBy ──────FK──▶│Users
-│  role        │       │  period          │       │  isUsed             │
-│  mode        │       │  parseStatus     │       │  expiresAt          │
-│  hasCompleted│       │  parsedData (JSON)│       │  channel            │
-│  Onboarding  │       │  parseErrors     │       └─────────────────────┘
-│  trialExpires│       │  aiRecognitionLog│
-│  analysisStatus     └──────────────────┘       ┌─────────────────────┐
-│  companyName │                                   │  AccessRequests     │
-│  inn         │       ┌──────────────────┐       │                     │
-│  companyType │──1:N──│ AnalysisResults  │       │  email              │
-└──────────────┘       │                  │       │  status             │
-       │               │  owner ──────────│──FK   │  inviteCode         │
-       │               │  period          │       │  approvedAt         │
-       │               │  revenue         │       └─────────────────────┘
-       │               │  cogs            │
-       │               │  grossProfit     │       ┌─────────────────────┐
-       │               │  grossMargin     │       │  GlobalSettings     │
-       │               │  accountsReceiv. │       │  (singleton)        │
-       │               │  accountsPayable │       │                     │
-       │               │  inventory       │       │  aiEnabled          │
-       │               │  arTurnoverDays  │       │  aiProvider         │
-       │               │  apTurnoverDays  │       │  aiModel            │
-       │               │  invTurnoverDays │       │  trialDays          │
-       │               │  healthIndex     │       └─────────────────────┘
-       │               │  topDebtors (JSON)│
-       │               │  topCreditors(JSON)│
-       │               │  aiAuditSummary  │
-       │               │  analysisPhase   │
-       │               │  isDemo          │
-       │               └──────────────────┘
-       │
-       ├──1:N──┬──────────────────────────┐
-       │       │     Recommendations       │
-       │       │                           │
-       │       │  owner ──────────────FK   │
-       │       │  ruleCode                 │
-       │       │  ruleName                 │
-       │       │  priority (4 levels)      │
-       │       │  title                    │
-       │       │  description              │
-       │       │  shortRecommendation      │
-       │       │  fullText                 │
-       │       │  status (5 states)        │
-       │       │  impactMetric             │
-       │       │  impactDirection          │
-       │       │  impactAmount             │
-       │       │  sourceAccount            │
-       │       │  counterparty             │
-       │       │  recipient                │
-       │       │  isDemo / isAiGenerated   │
-       │       │  aiEnhanced               │
-       │       │  takenAt / dueDate        │
-       │       │  resolvedAt               │
-       │       └───────────┬───────────────┘
-       │                   │
-       │                   └──1:N──┬───────────────────────┐
-       │                           │ RecommendationFeedback │
-       │                           │                        │
-       │                           │  owner ──────────FK    │
-       │                           │  recommendation ──FK   │
-       │                           │  rating / comment      │
-       │                           └────────────────────────┘
-       │
-       ├──1:N──┬──────────────────┐
-       │       │    EventLog       │
-       │       │  owner ──FK       │
-       │       │  eventType (17)   │
-       │       │  entityType       │
-       │       │  entityId         │
-       │       │  payload (JSON)   │
-       │       └──────────────────┘
-       │
-       ├──1:N──┬──────────────────┐
-       │       │   AIUsageLogs     │
-       │       │  owner ──FK       │
-       │       │  promptKey        │
-       │       │  inputTokens      │
-       │       │  outputTokens     │
-       │       │  model            │
-       │       │  cost ($)         │
-       │       │  durationMs       │
-       │       └──────────────────┘
-       │
-       └──(admin)──┬──────────────┐
-                   │  AIPrompts    │
-                   │  promptKey    │
-                   │  name         │
-                   │  systemPrompt │
-                   │  userPrompt   │
-                   │  version      │
-                   │  isActive     │
-                   └──────────────┘
+```mermaid
+erDiagram
+    Users ||--o{ UploadedFiles : owns
+    Users ||--o{ AnalysisResults : owns
+    Users ||--o{ Recommendations : owns
+    Users ||--o{ RecommendationFeedback : owns
+    Users ||--o{ EventLog : owns
+    Users ||--o{ OnboardingFunnelEvents : owns
+    Users ||--o{ AIUsageLogs : owns
+    Users ||--o{ InviteCodes : "createdBy / usedBy"
+    Recommendations ||--o{ RecommendationFeedback : "has feedback"
+
+    Users {
+        ObjectId id PK
+        string email UK
+        string name
+        string role "admin | ceo"
+        string mode "trial | full | expired"
+        boolean hasCompletedOnboarding
+        string wizardState "v1.2: 11 states"
+        number currentClassificationAttempts "v1.2"
+        date trialExpiresAt
+        string analysisStatus
+        string companyName
+        string inn
+        string companyType "ip | ooo"
+    }
+
+    UploadedFiles {
+        ObjectId id PK
+        ObjectId owner FK
+        string originalName
+        string accountCode
+        string period
+        string parseStatus "needs_ai_recognition / extraction"
+        json parsedData "raw parsed aiParsed aiHints"
+        json parseErrors
+        json aiRecognitionLog "v1.1"
+    }
+
+    AnalysisResults {
+        ObjectId id PK
+        ObjectId owner FK
+        string period
+        number revenue
+        number cogs
+        number grossProfit
+        number grossMargin
+        number accountsReceivable
+        number accountsPayable
+        number inventory
+        number arTurnoverDays
+        number apTurnoverDays
+        number invTurnoverDays
+        string healthIndex
+        json topDebtors
+        json topCreditors
+        string aiAuditSummary
+        string analysisPhase
+        boolean isDemo
+        string businessModel "v1.2 one of 13"
+        number businessModelConfidence "v1.2"
+        string businessModelRationale "v1.2"
+        json businessModelIndicators "v1.2"
+        boolean businessModelUserOverridden "v1.2"
+        string businessModelOriginalAi "v1.2"
+        string classificationStatus "v1.2"
+        json requestedAdditionalAccounts "v1.2"
+        number classificationAttempts "v1.2"
+        string dataQualityWarning "v1.2"
+    }
+
+    Recommendations {
+        ObjectId id PK
+        ObjectId owner FK
+        string ruleCode
+        string ruleName
+        string priority "4 levels"
+        string title
+        string description
+        string shortRecommendation
+        string fullText
+        string status "5 states"
+        string impactMetric
+        string impactDirection
+        number impactAmount
+        string sourceAccount
+        string counterparty
+        string recipient
+        boolean aiEnhanced "v1.1"
+        date takenAt
+        date dueDate
+        date resolvedAt
+    }
+
+    RecommendationFeedback {
+        ObjectId id PK
+        ObjectId owner FK
+        ObjectId recommendation FK
+        string rating "positive | negative"
+        string comment
+    }
+
+    OnboardingFunnelEvents {
+        ObjectId id PK
+        ObjectId owner FK
+        number attemptNumber
+        boolean reachedXxx "9 boolean flags"
+        date xxxAt "9 timestamps"
+        number durationXxx "8 deltas in ms"
+        number filesUploaded
+        json uploadedAccounts
+        number classificationAttempts
+        string classificationFinalStatus
+        string initialAiModel
+        string finalModel
+        boolean userOverridden
+        json forkChoices
+        number pauseCount
+        number totalPauseDurationMs
+        string outcome "completed abandoned refused in_progress"
+    }
+
+    EventLog {
+        ObjectId id PK
+        ObjectId owner FK
+        string eventType "~30 types"
+        string entityType
+        string entityId
+        json payload
+    }
+
+    AIUsageLogs {
+        ObjectId id PK
+        ObjectId owner FK
+        string promptKey
+        number inputTokens
+        number outputTokens
+        string model
+        number cost
+        number durationMs
+    }
+
+    AIPrompts {
+        ObjectId id PK
+        string promptKey UK
+        string name
+        string systemPrompt
+        string userPromptTemplate
+        number version
+        boolean isActive
+    }
+
+    InviteCodes {
+        ObjectId id PK
+        string code UK
+        ObjectId createdBy FK
+        ObjectId usedBy FK
+        boolean isUsed
+        date expiresAt
+        string channel
+    }
+
+    AccessRequests {
+        ObjectId id PK
+        string email
+        string status
+        string inviteCode
+        date approvedAt
+    }
+
+    GlobalSettings {
+        ObjectId id PK
+        boolean aiEnabled
+        string aiProvider
+        string aiModel
+        number trialDays
+        boolean aiClassificationEnabled "v1.2"
+        number classificationConfidenceThreshold "v1.2"
+        number classificationAutoConfirmThreshold "v1.2"
+        boolean classificationAutoConfirmEnabled "v1.2"
+        number maxClassificationAttempts "v1.2"
+        json requiredAccountCodes "v1.2"
+        json recommendedAccountCodes "v1.2"
+        json optionalAccountCodes "v1.2"
+        string supportContact "v1.2"
+    }
 ```
 
 ### Collections Summary
@@ -339,8 +429,10 @@ The system is a **monolithic Next.js application** with an embedded Payload CMS 
 | AI Prompts | `ai-prompts` | — | Yes (full CRUD) |
 | AI Usage Logs | `ai-usage-logs` | User (owner) | Read: admin; Create: system |
 | Event Log | `event-log` | User (owner) | Read: admin; Create: open |
+| **Onboarding Funnel Events** | `onboarding-funnel-events` | User (owner) | Read: admin; Write: system |
 | Invite Codes | `invite-codes` | — | Yes (full CRUD) |
 | Access Requests | `access-requests` | — | Create: public; Read/Update: admin |
+
 
 ### Recommendations — fields added in v1.1 (AI rules pipeline)
 
@@ -369,6 +461,73 @@ The system is a **monolithic Next.js application** with an embedded Payload CMS 
 | `global-settings.aiFileExtractionEnabled` | `false` | Master switch for AI fallback in the upload pipeline. |
 | `global-settings.aiFileExtractionMaxKB` | `100` | Hard cap on file size sent to `data_extraction`. Larger files are truncated with `parsedData.truncated=true`. |
 | `global-settings.aiFileBatchSize` | `2` | Files per `/api/files/ai-recognize-batch` call. |
+
+### Users — fields added in v1.2 (classification & wizard state machine)
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `wizardState` | `select` enum | Current onboarding wizard state. Used by `/app/*` layout for routing. Values: `idle`, `uploading`, `recognizing`, `extracting`, `classifying`, `awaiting_confirmation`, `awaiting_additional_files`, `classification_refused`, `analyzing`, `enhancing`, `completed`. Default: `idle`. |
+| `currentClassificationAttempts` | `number`, default `0` | Counter of classification iterations in the current onboarding (request additional data → re-classify cycle). Reset on `wizardState=completed`. Capped by `global-settings.maxClassificationAttempts`. |
+
+### AnalysisResults — fields added in v1.2 (business model classification)
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `businessModel` | `select` enum (13 models) | Final business model used to filter rules. Values: `project`, `trading`, `production`, `subscription`, `consulting`, `agency`, `project_trading`, `production_project`, `consulting_subscription`, `trading_agency`, `subscription_consulting`, `production_trading`, `clinic`. |
+| `businessModelConfidence` | `number` (0-1) | AI confidence at the time of final determination. |
+| `businessModelRationale` | `textarea` | Human-readable explanation shown to user ("why this model"). 2-4 bullet points. |
+| `businessModelIndicators` | `json` | Computed values for the 7 matrix indicators. Schema: `{ inventory_balance_41, wip_balance_20, finished_goods_43, revenue_regularity_score, fot_share_in_cogs, agency_transit_share, account_26_destination, _missing: string[] }`. |
+| `businessModelUserOverridden` | `checkbox`, default `false` | True if user changed the AI-determined model in the confirmation screen. |
+| `businessModelOriginalAi` | `text`, optional | The model AI originally returned, before any user override. Kept for analytics. |
+| `classificationStatus` | `select` enum | `success` (high confidence, confirmed), `degraded` (low confidence, user accepted without uploading more files), `refused_manual` (cannot_classify path → user picked manually), `disabled` (`aiClassificationEnabled=false`, defaulted to `trading`). |
+| `requestedAdditionalAccounts` | `json` (string[]) | Accounts AI asked to upload in the last `needs_data` iteration. Used for the persistent banner on `/app/inbox` when classification ended in `degraded`. |
+| `classificationAttempts` | `number` | Total number of classify cycles for this analysis result. |
+| `dataQualityWarning` | `textarea`, optional | AI's warning about data quality artifacts ("looks like reseller-as-producer accounting") that influenced classification. Shown as yellow banner in the confirmation screen. |
+
+### Globals — fields added in v1.2
+
+| Global / Field | Default | Purpose |
+|----------------|---------|---------|
+| `global-settings.aiClassificationEnabled` | `true` | Master switch for AI business model classification. Off → stage skipped, default `trading`, all 9 rules apply. |
+| `global-settings.classificationConfidenceThreshold` | `0.7` | Minimum confidence to qualify as `status='success'`. Below threshold → `status='needs_data'` (UI shows fork screen). |
+| `global-settings.classificationAutoConfirmThreshold` | `0.85` | Confidence above which UI auto-confirms (3-second countdown) if `classificationAutoConfirmEnabled=true`. |
+| `global-settings.classificationAutoConfirmEnabled` | `false` | When true, UI auto-advances on high confidence. Default: always require explicit confirmation. |
+| `global-settings.maxClassificationAttempts` | `3` | After this many `needs_data` cycles, "continue without files" becomes the only available option. |
+| `global-settings.supportContact` | `""` | Contact for "talk to consultant" on the `cannot_classify` screen (email or Telegram link). |
+| `global-settings.requiredAccountCodes` | `['90.01','90.02','60','62','10','41','45']` | Accounts that must be uploaded before "Start analysis" is enabled. |
+| `global-settings.recommendedAccountCodes` | `['26','20','43','76']` | Optional but recommended accounts. AI may request these via `requestedAccounts`. |
+| `global-settings.optionalAccountCodes` | `['51']` | Truly optional accounts (e.g., bank statement for future liquidity analysis). |
+
+### OnboardingFunnelEvents — new collection in v1.2
+
+Aggregated record per onboarding attempt. One row per onboarding lifecycle. Used for the admin funnel dashboard. See `analytics-spec.md` §3.2 for full field reference.
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `owner` | `relationship → users` | The user this onboarding belongs to. |
+| `attemptNumber` | `number` | 1 for first onboarding, 2+ for re-onboardings (e.g., after migrations). |
+| `reachedStart` / `reachedUpload` / `reachedMinimumSet` / `reachedRecommendedSet` / `reachedRecognition` / `reachedExtraction` / `reachedClassification` / `reachedConfirmation` / `reachedAnalysis` | `checkbox` | Funnel-step flags. Idempotent: only set to `true` once. |
+| `startedAt` / `uploadStartedAt` / `minimumSetCompletedAt` / `recommendedSetCompletedAt` / `classificationStartedAt` / `classificationCompletedAt` / `confirmationCompletedAt` / `analysisCompletedAt` / `abandonedAt` | `date` | Timestamps for funnel steps. |
+| `durationToUpload` / `durationUpload` / `durationRecognition` / `durationExtraction` / `durationClassification` / `durationConfirmation` / `durationAnalysis` / `durationTotal` | `number` (ms) | Computed durations. Filled at finalization. |
+| `filesUploaded` | `number` | Total files uploaded during this onboarding. |
+| `uploadedAccounts` | `json` (string[]) | Account codes that were successfully recognized. |
+| `missingRequiredAccounts` / `missingRecommendedAccounts` | `json` (string[]) | Account codes that were never uploaded. |
+| `classificationAttempts` | `number` | Total classify cycles during this onboarding. |
+| `classificationFinalStatus` | `select` enum | `success` / `degraded` / `refused_manual` / `disabled`. |
+| `initialAiModel` / `initialAiConfidence` | `text` / `number` | What AI returned on the very first classify call. |
+| `finalModel` / `finalConfidence` | `text` / `number` | What ended up being used for analysis (after user override / degraded acceptance). |
+| `userOverridden` | `checkbox` | True if user changed the AI-determined model. |
+| `hasDataQualityWarning` | `checkbox` | True if any iteration returned a `dataQualityWarning`. |
+| `requestedAccountsHistory` | `json` (string[][]) | Array per attempt: `[['43','76'], ['43']]` — what AI asked for on each iteration. |
+| `forkChoices` | `json` (object[]) | User's choices in the fork screen: `[{attempt, choice, timestamp}, ...]`. |
+| `pauseCount` | `number` | How many times this onboarding entered `awaiting_additional_files`. |
+| `totalPauseDurationMs` | `number` | Cumulative time spent in pause across all entries. |
+| `outcome` | `select` enum | `completed` / `abandoned` / `refused` / `in_progress`. |
+| `recommendationsCreated` | `number` | Final recommendation count after analysis. |
+
+**Maintenance.** A scheduled cron job (hourly) sweeps `outcome='in_progress'` records with `updatedAt < now - 24h`, sets `outcome='abandoned'`, fills `abandonedAt`, and emits `wizard.abandoned` to `event-log`.
+
+**Access control:** Read by admins only. Write is system-only — performed by the backend helper `updateFunnelEvent(userId, patch)` which is invoked from event handlers. Users do not see their own funnel records.
 
 ### Globals — original fields
 
@@ -411,16 +570,19 @@ src/app/
 ├── api/                  ← Custom REST endpoints
 │   ├── auth/             ← login, register, logout
 │   ├── files/             ← upload, ai-recognize-batch (v1.1), ai-extract-next (v1.1), status (v1.1)
-│   ├── analysis/         ← run, ai-audit, ai-enhance, ai-enhance-batch (v1.1), status
+│   ├── analysis/         ← run, ai-audit, ai-enhance, ai-enhance-batch (v1.1), status,
+│   │                       classify (v1.2), classification (v1.2), classification-state (v1.2)
 │   ├── recommendations/  ← Status updates
 │   ├── feedback          ← User feedback on recommendations
 │   ├── events            ← Client-side analytics
 │   ├── ai/               ← Status check, seed-prompts (with ?upsert flag)
 │   ├── access-requests   ← Public access request
 │   ├── invite-codes/     ← Validate invite
-│   ├── onboarding/       ← Complete onboarding
+│   ├── onboarding/       ← Complete onboarding, resume (v1.2)
+│   ├── admin/            ← v1.2: admin-only endpoints
+│   │   └── funnel/       ← Onboarding funnel dashboard data + drill-down + export
 │   ├── demo/             ← Seed/list/download demo data
-│   └── dev/              ← Dev helpers (skip/reset onboarding)
+│   └── dev/              ← Dev helpers (skip/reset onboarding, migrate-v3.3)
 │
 └── manifest.ts           ← PWA manifest
 ```
@@ -440,20 +602,28 @@ src/app/
 | POST | `/api/analysis/ai-enhance-batch` | Cookie | Picks K pending recommendations (`aiEnhanced=false`), respects 5-minute cooldown via `aiEnhanceFailedAt`, calls `analyzeCandidates()` with bounded concurrency (15 s per-call timeout), updates each rec or stamps `aiEnhanceFailedAt`/`aiEnhanceError`. Returns `{ done, processed, failed, remaining }`. |
 | POST | `/api/analysis/ai-audit` | Cookie | Runs Claude AI audit on latest analysis metrics (legacy, complementary to per-rule pipeline) |
 | POST | `/api/analysis/ai-enhance` | Cookie | Enhances one recommendation at a time with AI (legacy single-rec endpoint, retained for compatibility) |
-| GET | `/api/analysis/status` | Cookie | Returns `{ phase, analysisId, total, enhanced, remaining, failed, done }` for client polling. |
+| GET | `/api/analysis/status` | Cookie | Returns `{ phase, analysisId, total, enhanced, remaining, failed, done, wizardState }` for client polling. v1.2: includes `wizardState` for state-machine routing decisions. |
+| POST | `/api/analysis/classify` | Cookie | **v1.2.** Reads `parsedData` from all completed files, calls Claude with `business_model_classification` prompt (4 s timeout, ~3-5 s typical). Creates draft `analysis-results` with classification fields. Updates `users.wizardState` based on AI response status (`success` → `awaiting_confirmation`; `needs_data` → `awaiting_confirmation` (best-guess + UI shows fork); `cannot_classify` → `classification_refused`). Increments `currentClassificationAttempts`. Returns `{ status, model?, confidence?, rationale, indicators, requestedAccounts?, dataQualityWarning?, attempt }`. |
+| PATCH | `/api/analysis/classification` | Cookie | **v1.2.** User confirms or changes the model. Body: `{ model, isOverride: bool, acceptDegraded: bool, choice?: 'upload_now'\|'upload_later'\|'continue_degraded' }`. Sets `analysis-results.businessModel` + `classificationStatus` (`success` / `degraded` / `refused_manual`). Transitions `users.wizardState` to `analyzing` (confirm or accept-degraded path) or `awaiting_additional_files` (`choice='upload_later'`). Returns `{ ok, status, nextStage }`. |
+| POST | `/api/analysis/refuse-classification` | Cookie | **v1.2.** User accepted the `cannot_classify` outcome and chose to contact support instead. Logs `classification.refused_contact_requested`, leaves `wizardState='classification_refused'`. Does not start analysis. |
+| GET | `/api/analysis/classification-state` | Cookie | **v1.2.** Returns the current classification state for the user's draft analysis-results: `{ status, model?, confidence?, rationale, indicators, requestedAccounts?, dataQualityWarning?, attempt, wizardState }`. Used by the wizard UI for polling and re-rendering after page reload. |
 | GET | `/api/ai/status` | Cookie | Checks if AI is available (API key + admin toggle) |
-| POST | `/api/ai/seed-prompts` | Admin | Seeds default AI prompts into database. Accepts `?upsert=true` to overwrite existing prompts and bump `version` (used to roll out v2 of `file_recognition`/`data_extraction` and per-rule prompts). |
+| POST | `/api/ai/seed-prompts` | Admin | Seeds default AI prompts into database. Accepts `?upsert=true` to overwrite existing prompts and bump `version` (used to roll out v2 of `file_recognition`/`data_extraction` and per-rule prompts; in v1.2 also seeds `business_model_classification`). |
 | PATCH | `/api/recommendations/[id]/status` | Cookie | Updates recommendation status, sets timestamps |
 | POST | `/api/feedback` | Cookie | Creates recommendation feedback |
 | POST | `/api/events` | Cookie | Logs whitelisted client-side analytics events |
 | POST | `/api/access-requests` | Public | Submits email for access |
 | GET | `/api/invite-codes/validate` | Public | Validates invite code |
 | POST | `/api/onboarding/complete` | Cookie | Marks onboarding as complete |
+| GET | `/api/admin/funnel/overview` | Admin | **v1.2.** Aggregated funnel data for the admin dashboard. Query params: `period` (`today` / `7d` / `30d` / `custom`), `mode`, `classificationStatus`, `completedOnly`. Returns aggregates across 6 dashboard blocks (funnel steps, fork analysis, models, override pairs, durations, cohorts). See `analytics-spec.md` §5.1 for response shape. |
+| GET | `/api/admin/funnel/users` | Admin | **v1.2.** Drill-down for the funnel dashboard. Returns the list of users who **did not** complete a given step. Query params: `step`, `completed=false`, `period`. |
+| GET | `/api/admin/funnel/export` | Admin | **v1.2.** Streams `onboarding-funnel-events` for the period as CSV. |
 | POST | `/api/demo/seed` | Cookie | Seeds demo data for current user |
 | GET | `/api/demo/files` | Cookie | Lists available demo CSV files |
 | GET | `/api/demo/files/download` | Cookie | Downloads a specific demo CSV |
 | POST | `/api/dev/skip-onboarding` | Cookie | Dev only: skip onboarding |
 | POST | `/api/dev/reset-onboarding` | Cookie | Dev only: clear demo data and reset |
+| POST | `/api/dev/migrate-v3.3` | Admin | **v1.2.** Migration script for the v3.3.1 schema rollout: resets `hasCompletedOnboarding=false` for all users, deletes their stale `analysis-results` and `recommendations` (no real production users yet, so this is safe). Idempotent. Available in `dev` and `staging` only. |
 
 ### Service Layer
 
@@ -486,6 +656,31 @@ src/lib/
 │   │                            bypasses the strict first-line regex when AI hints are available
 │   └── validate.ts            ← v1.1: validateParsedAccountData() — schema + numeric sanity
 │                                check (totals vs sum of entities, ±5%, supported account codes)
+├── classification/            ← v1.2: business model classification subsystem
+│   ├── matrix.ts              ← TypeScript object encoding the 13 models × 7 indicators matrix.
+│   │                            Source of truth for the classification AI prompt. Each entry
+│   │                            specifies indicator strength (strong/moderate/weak) and human-
+│   │                            readable description. Updates here propagate to the prompt
+│   │                            without code changes elsewhere.
+│   ├── rule-allowlist.ts      ← Maps each businessModel to a Set<RuleCode>. Imported by
+│   │                            /api/analysis/run before invoking the rules engine.
+│   │                            Hybrids = union of base models. Defaults to all 9 rules
+│   │                            (trading) when classification is disabled or unknown.
+│   ├── classifier.ts          ← classify(parsedData[]) → ClassificationResult.
+│   │                            Wraps callAI with the business_model_classification prompt,
+│   │                            4 s timeout, JSON validation, confidence-floor enforcement
+│   │                            (≥4 indicators required for confidence > 0.6).
+│   └── service.ts             ← runClassification(userId), confirmClassification(userId, model),
+│                                acceptDegraded(userId), refuseClassification(userId).
+│                                Also coordinates wizardState transitions and funnel-event
+│                                updates.
+├── funnel/                    ← v1.2: onboarding funnel analytics
+│   ├── update-event.ts        ← updateFunnelEvent(userId, patch) — idempotent helper that
+│   │                            merges into the user's current onboarding-funnel-events record.
+│   │                            Sets `reachedXxx` flags only on first observation.
+│   ├── compute-durations.ts   ← Fills durationXxx fields when an onboarding finalizes.
+│   └── abandoned-sweep.ts     ← Hourly cron job (Vercel scheduled function or external trigger)
+│                                that finalizes stale `in_progress` records as `abandoned`.
 └── rules/
     ├── engine.ts              ← Orchestrates 9 rules, returns RuleCandidate[] (v1.1).
     │                            Wraps legacy rules in synthetic candidates with __legacy__ marker
@@ -536,6 +731,60 @@ src/lib/
 │  BottomNav (mobile: inbox, tasks, data, settings)            │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### Onboarding wizard routes (v1.2)
+
+The onboarding flow lives at `/app/onboarding/*` and is driven by `users.wizardState`. The `(frontend)/app/layout.tsx` redirects authenticated users to the appropriate sub-route based on state:
+
+| `wizardState` | Redirect target | Screen contents |
+|---|---|---|
+| `idle` | `/app` | Welcome / "How it works" carousel |
+| `uploading`, `recognizing`, `extracting`, `classifying`, `analyzing`, `enhancing` | `/app/onboarding` | Linear progress wizard with stage indicators |
+| `awaiting_confirmation` (success/needs_data with best-guess) | `/app/onboarding` (mode=confirm or mode=fork) | Classification confirmation screen or fork screen, depending on AI status |
+| `awaiting_additional_files` | `/app/onboarding/resume` | Pause screen — file picker for requested accounts + "Continue without files" option |
+| `classification_refused` | `/app/onboarding/refused` | Refusal screen with manual model picker + "Contact support" |
+| `completed` | `/app/inbox` | Standard app shell |
+
+Each onboarding screen is a Client Component that polls `/api/analysis/classification-state` (every 2 s during AI calls) and reacts to state transitions.
+
+**Wizard state machine** (`users.wizardState` field — drives routing in `(frontend)/app/layout.tsx`):
+
+```mermaid
+stateDiagram-v2
+    [*] --> idle : registration
+
+    idle --> uploading : user uploads files
+    uploading --> recognizing : files need AI-recognize
+    uploading --> extracting : files need AI-extract directly
+    uploading --> classifying : all files parsed deterministically
+
+    recognizing --> extracting : some files still need extraction
+    recognizing --> classifying : all done
+    extracting --> classifying : all done
+
+    classifying --> awaiting_confirmation : status=success or needs_data
+    classifying --> classification_refused : status=cannot_classify
+
+    awaiting_confirmation --> uploading : choice=upload_now
+    awaiting_confirmation --> awaiting_additional_files : choice=upload_later
+    awaiting_confirmation --> analyzing : confirm or accept_degraded
+
+    awaiting_additional_files --> uploading : user returns and uploads
+    awaiting_additional_files --> [*] : abandoned 24h+ (cron)
+
+    classification_refused --> awaiting_confirmation : manual model pick
+    classification_refused --> [*] : contact support
+
+    analyzing --> enhancing : rules engine finished
+    enhancing --> completed : AI-enhance done
+    completed --> [*] : redirect to /app/inbox
+```
+
+### Admin pages (v1.2)
+
+| Route | Purpose |
+|---|---|
+| `/admin/funnel` | Custom Payload Admin page with the onboarding funnel dashboard. Six blocks (funnel steps, fork analysis, models, override pairs, durations, cohorts). Uses Recharts for visualizations. Calls `/api/admin/funnel/*` endpoints. See `analytics-spec.md` §4 for full layout. |
 
 ### Component Organization
 
@@ -633,41 +882,25 @@ This ensures users can only read/update their own records while admins have full
 
 The AI subsystem is designed with a **graceful degradation pattern** — the product functions fully without AI using the deterministic rules engine, and AI augments the experience when available.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                       AI Subsystem                          │
-│                                                             │
-│  ┌─────────────────┐                                        │
-│  │ isAIAvailable()  │  Checks:                              │
-│  │                  │  1. global-settings.aiEnabled == true  │
-│  │                  │  2. ANTHROPIC_API_KEY is set            │
-│  └────────┬────────┘                                        │
-│           │                                                  │
-│           ▼                                                  │
-│  ┌─────────────────┐     ┌──────────────────┐               │
-│  │ loadPrompt()     │────▶│ ai-prompts       │               │
-│  │ (from DB)        │     │ collection (DB)  │               │
-│  └────────┬────────┘     │                  │               │
-│           │               │ • promptKey      │               │
-│           │               │ • systemPrompt   │               │
-│           │               │ • userTemplate   │               │
-│           │               │ • version        │               │
-│           │               │ • isActive       │               │
-│           │               └──────────────────┘               │
-│           ▼                                                  │
-│  ┌─────────────────┐     ┌──────────────────┐               │
-│  │  callAI()        │────▶│ Anthropic SDK    │               │
-│  │                  │     │                  │               │
-│  │  • Interpolates  │     │ messages.create({│               │
-│  │    variables     │     │   model,         │               │
-│  │  • Logs request  │     │   max_tokens,    │               │
-│  │    event         │     │   system,        │               │
-│  │  • Calls Claude  │     │   messages       │               │
-│  │  • Logs usage    │     │ })               │               │
-│  │  • Logs response │     └──────────────────┘               │
-│  │    event         │                                        │
-│  └─────────────────┘                                        │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Caller[Caller: API endpoint or service]
+    Available["isAIAvailable()<br/>checks aiEnabled flag<br/>+ ANTHROPIC_API_KEY presence"]
+    LoadPrompt["loadPrompt(promptKey)<br/>fetches from ai-prompts collection"]
+    Prompts[(ai-prompts collection<br/>promptKey • systemPrompt<br/>userTemplate • version • isActive)]
+    Call["callAI()<br/>• Interpolates variables<br/>• Logs ai.request event<br/>• Calls Claude<br/>• Logs token usage<br/>• Logs ai.response or ai.error"]
+    Anthropic[Anthropic SDK<br/>messages.create]
+    Logs[(ai-usage-logs<br/>event-log)]
+
+    Caller --> Available
+    Available -->|available| LoadPrompt
+    Available -->|unavailable| Fallback[Caller falls back<br/>to template]
+    LoadPrompt --> Prompts
+    LoadPrompt --> Call
+    Call --> Anthropic
+    Anthropic --> Call
+    Call --> Logs
+    Call --> Caller
 ```
 
 ### AI Prompt Registry
@@ -678,11 +911,25 @@ Prompts are stored in the database (`ai-prompts` collection) and managed via the
 |-----------|---------|---------|---------|
 | `file_recognition` | 2 | Extract `accountCode`, `period`, `documentType`, `columnFormat` (`'7-col'\|'8-col'\|'unknown'`) from the first 50 lines of a CSV | `aiIdentifyFile()` → `/api/files/ai-recognize-batch` |
 | `data_extraction` | 2 | Extract full `ParsedAccountData` JSON from raw CSV (with strict schema, numeric/format rules) | `aiExtractData()` → `/api/files/ai-extract-next` |
+| `business_model_classification` | 1 (v1.2) | Classify the user's business as one of 13 models on the matrix. Receives the matrix definition in the system prompt and aggregated `ParsedAccountData` from all uploaded files. Returns `{status, model?, confidence?, rationale, indicators, requestedAccounts?, dataQualityWarning?}`. Always returns a `model` value as best-guess except when `status='cannot_classify'`. | `classify()` → `/api/analysis/classify` |
 | `recommendation_text` | 1 | Generate send-ready business letter | Legacy single-rec enhancement |
 | `enhance_recommendation` | 1 | Rewrite rule output with CEO-grade context (`description`, `recommendation`, `draft`) | `/api/analysis/ai-enhance` |
 | `audit_working_capital` | 1 | Generate 2-3 strategic AI-only recommendations | `/api/analysis/ai-audit` |
 | `rule_dz1` | 1 | Per-rule prompt for `ДЗ-1` candidates — emits `{priority, title, description, shortRecommendation, fullText}` | `analyzeCandidates()` → `/api/analysis/ai-enhance-batch` |
 | `rule_<code>` (reserved) | — | Slot for future per-rule prompts as the remaining 8 rules migrate to the candidate contract (`rule_dz2`, `rule_kz1`, …) | `analyzeCandidates()` |
+
+### `business_model_classification` prompt internals (v1.2)
+
+The system prompt embeds the full matrix from `src/lib/classification/matrix.ts` and asks the model to follow this chain-of-thought:
+
+1. Compute the 7 indicators from the provided `ParsedAccountData`. Mark missing ones explicitly.
+2. For each of the 13 models, compute a fit score: Σ(matched strong/moderate signals) − Σ(contradictions).
+3. If max score >> 2nd score and indicators are complete → `status='success'`, confidence ≥ 0.7.
+4. If the gap is small → `status='needs_data'`, populate `requestedAccounts` (≤3 specific accounts that would resolve the ambiguity), and **still fill `model`** as best-guess for the "continue without files" path.
+5. If signals look like a hybrid but don't form a coherent business story → return the base model + `dataQualityWarning` explaining the suspected accounting artifact ("resale recorded through 20 as production").
+6. If 4+ conflicting signals or out-of-ICP → `status='cannot_classify'`.
+
+**Confidence floor enforcement.** The system prompt instructs the model to lower confidence by 0.10-0.15 per missing indicator (out of 7), and to never return confidence > 0.6 if fewer than 4 indicators are available. The classifier service (`src/lib/classification/classifier.ts`) additionally enforces this floor as a defense-in-depth check after parsing the AI response.
 
 ### Chunked Client-Polled Pattern (Vercel Hobby Compatible)
 
@@ -695,18 +942,28 @@ File pipeline:  POST /api/files/upload            POST /api/files/ai-recognize-b
                   ~2 s (no AI)                    POST /api/files/ai-extract-next   (1/call)
                                                   GET  /api/files/status            (counts)
 
+Classify v1.2:  POST /api/analysis/classify       (sync, ≤5 s; 1 AI call inside)
+                PATCH /api/analysis/classification (sync, <500 ms; DB only)
+                GET   /api/analysis/classification-state (state polling for UI)
+
 Rules pipeline: POST /api/analysis/run            POST /api/analysis/ai-enhance-batch (3/call)
                   ~2 s (rules only)               GET  /api/analysis/status           (progress)
 ```
 
-The onboarding wizard runs five sequential stages, each polling its dedicated endpoint until `done: true` before moving to the next:
+The onboarding wizard runs sequential stages, each polling its dedicated endpoint until `done: true` (or transitioning into a wait-state) before moving to the next:
 
 ```
-Upload → AI-recognize batch → AI-extract next → metrics+rules → AI-enhance batch
- (sync)   (poll, 6 s/call)    (poll, 9 s/call)  (sync, 2 s)     (poll, 6-8 s/call)
+Upload → AI-recognize batch → AI-extract next → AI-classify → confirmation/fork →
+ (sync)   (poll, 6 s/call)    (poll, 9 s/call)  (sync, 5 s)   (user input)
+       → metrics+rules → AI-enhance batch → done
+         (sync, 2 s)     (poll, 6-8 s/call)
 ```
 
-Stages 1-2 are skipped when no files require AI (canonical 1C exports), and stage 5 is skipped when AI is disabled or no recommendations are AI-eligible.
+The classification stage adds two state-machine branches:
+- **`needs_data`** — wizard pauses on the fork screen. User chooses upload-now (re-enters the upload stage), upload-later (transitions to `awaiting_additional_files`, exit allowed), or continue-degraded (skips ahead to metrics+rules).
+- **`cannot_classify`** — wizard transitions to `classification_refused` and shows the refusal screen with manual model picker.
+
+Stages 1-2 are skipped when no files require AI (canonical 1C exports). The classification stage is skipped when `aiClassificationEnabled=false` (defaults to `trading`). The AI-enhance stage is skipped when AI is disabled or no recommendations are AI-eligible.
 
 ### AI Failure Modes & Fallback
 
@@ -762,54 +1019,53 @@ The rules engine performs **deterministic candidate selection** in TypeScript an
 | FC1 | Payment Cycle Imbalance | Cash Flow | AR days significantly exceeding AP days |
 | SVS1 | Data Quality | Cross-cutting | Missing accounts, zero balances, suspicious patterns |
 
-### Processing Flow (v1.1)
+### Processing Flow (v1.2)
 
+```mermaid
+flowchart TD
+    Input[ParsedAccountData array<br/>7+ account types]
+    Allowlist["rule-allowlist.ts<br/>getAllowedRules(businessModel)<br/>returns Set of RuleCode<br/>v1.2"]
+
+    Input --> Allowlist
+    Allowlist --> Engine
+
+    subgraph Engine [" runRulesEngine(data, allowedRules) "]
+        DZ1[DZ1 native<br/>RuleCandidate with structured signals<br/>skipped if not in allowedRules]
+        Legacy[Legacy rules DZ2 to SVS1<br/>emit GeneratedRec then legacyToCandidate<br/>wrapped with __legacy__ marker<br/>each individually filtered by allowlist]
+        Sort[Sort by priorityHint<br/>critical greater than high greater than medium greater than low]
+        DZ1 --> Sort
+        Legacy --> Sort
+    end
+
+    Engine --> Candidates[RuleCandidate array]
+    Candidates --> Run["POST /api/analysis/run persists each as Recommendation"]
+
+    Run --> Routing{Rule type}
+    Routing -->|AI-eligible<br/>rule in aiRulesEnabledFor| Pending[Recommendation with<br/>fallback text<br/>aiEnhanced=false]
+    Routing -->|legacy or non-eligible| Final[Recommendation with<br/>legacy or fallback text<br/>aiEnhanced=true]
+
+    Pending --> Enhance["POST /api/analysis/ai-enhance-batch<br/>client-polled"]
+
+    subgraph Analyzer [" analyzeCandidates "]
+        SkipLegacy[Skip legacy candidates<br/>already final]
+        LoadPrompt[Load prompt rule_code from ai-prompts]
+        CallClaude[Call Claude bounded concurrency<br/>15 s timeout]
+        ParseJson[Parse strict JSON<br/>priority title description<br/>shortRecommendation fullText]
+        CapPriority[Cap AI priority at hint+1<br/>anti-flood]
+        Fallback[fallbackForCandidate on any failure]
+
+        SkipLegacy --> LoadPrompt
+        LoadPrompt --> CallClaude
+        CallClaude --> ParseJson
+        ParseJson --> CapPriority
+        CallClaude -.->|on failure| Fallback
+        ParseJson -.->|on failure| Fallback
+    end
+
+    Enhance --> Analyzer
+    Analyzer --> Updated[Updated recommendation rows<br/>aiEnhanced=true on success<br/>aiEnhanceFailedAt + aiEnhanceError on failure]
 ```
-ParsedAccountData[] (7 account types)
-         │
-         ▼
-┌────────────────────────┐
-│    runRulesEngine()     │
-│                         │
-│  DZ1 → RuleCandidate[]  │  ← native (with structured signals)
-│                         │
-│  legacy rules:          │
-│    DZ2..SVS1 →          │
-│      GeneratedRec[] →   │  ← still emit ready-to-persist text;
-│      legacyToCandidate()│    wrapped with `__legacy__: true` marker
-│                         │
-│  sort by priorityHint:  │
-│    critical > high >    │
-│    medium > low         │
-└────────────┬───────────┘
-             │
-             ▼
-      RuleCandidate[]
-             │
-             ├─ persisted by /api/analysis/run as recommendations:
-             │   • AI-eligible (rule in aiRulesEnabledFor + aiRulesEnabled):
-             │       fallback text + aiEnhanced=false  → enhanced later
-             │   • legacy or non-eligible:
-             │       legacy text or fallback text + aiEnhanced=true
-             │
-             ▼
-   /api/analysis/ai-enhance-batch (client-polled)
-             │
-             ├─ analyzeCandidates(candidates, metrics, userId):
-             │   ├─ skip legacy candidates (already final)
-             │   ├─ for each AI-eligible candidate:
-             │   │   ├─ load prompt rule_<code> from ai-prompts
-             │   │   ├─ call Claude with bounded concurrency (15 s timeout)
-             │   │   ├─ parse strict JSON output (priority, title, description,
-             │   │   │   shortRecommendation, fullText)
-             │   │   ├─ cap AI priority at hint+1 (anti-flood)
-             │   │   └─ on any failure → fallbackForCandidate(candidate)
-             │   └─ return AnalyzedRecommendation[] with aiEnhanced flag
-             ▼
-        Updated recommendation rows
-        (aiEnhanced=true on success;
-         aiEnhanceFailedAt + aiEnhanceError on failure)
-```
+
 
 ### Financial Metrics
 
@@ -834,138 +1090,115 @@ Calculated from 7 account types (1C chart of accounts):
 
 ## 11. Data Pipeline
 
-### End-to-End Data Flow (v1.1)
+### End-to-End Data Flow (v1.2)
 
-The pipeline is organised as **deterministic-first, AI-fallback** in two places: file parsing (where AI recovers nonstandard headers/layouts) and rule output (where AI enriches descriptions and drafts the user-facing letter). Both AI stages are driven by client polling so each individual server call fits within Vercel Hobby's 10 s function timeout.
+The pipeline is organised as **deterministic-first, AI-fallback** in three places: file parsing (where AI recovers nonstandard headers/layouts), business model classification (where AI selects the relevant rule subset), and rule output (where AI enriches descriptions and drafts the user-facing letter). Each AI stage is driven by client polling so individual server calls fit within Vercel Hobby's 10 s function timeout.
 
+```mermaid
+flowchart TD
+    User([1C user exports 7+ CSV files])
+    Upload["POST /api/files/upload<br/>sync, ~2 s<br/>tries identifyFile + parseOSVFile"]
+    User --> Upload
+
+    Upload --> ParseDecide{Parsed<br/>deterministically?}
+    ParseDecide -->|yes| FileSuccess[parseStatus = success<br/>parsedData.parsed]
+    ParseDecide -->|no, regex miss| NeedRecognize[parseStatus = needs_ai_recognition]
+
+    NeedRecognize --> Recognize["POST /api/files/ai-recognize-batch<br/>poll, 2 files per call, ~6 s<br/>aiIdentifyFile + parseOSVFileWithHints"]
+    Recognize --> RecognizeDecide{Lenient parser<br/>succeeded?}
+    RecognizeDecide -->|yes| FileSuccess
+    RecognizeDecide -->|no| NeedExtract[parseStatus = needs_ai_extraction]
+
+    NeedExtract --> Extract["POST /api/files/ai-extract-next<br/>poll, 1 file per call, ~9 s<br/>aiExtractData full JSON"]
+    Extract --> ExtractDecide{Schema validation<br/>plus totals check?}
+    ExtractDecide -->|valid| FileAi[parseStatus = success<br/>parsedData.aiParsed]
+    ExtractDecide -->|invalid| FileError[parseStatus = error<br/>parseErrors set]
+
+    FileSuccess --> Classify
+    FileAi --> Classify
+
+    Classify["POST /api/analysis/classify<br/>sync, ~5 s, 1 AI call<br/>business_model_classification prompt"]
+    Classify --> ClassifyDecide{AI status}
+
+    ClassifyDecide -->|success<br/>high confidence| AwaitConfirm[wizardState equals<br/>awaiting_confirmation]
+    ClassifyDecide -->|needs_data<br/>low confidence| AwaitFork[wizardState equals<br/>awaiting_confirmation<br/>UI shows fork]
+    ClassifyDecide -->|cannot_classify| Refused[wizardState equals<br/>classification_refused]
+
+    AwaitConfirm --> Patch
+    AwaitFork --> ForkChoice{User choice}
+    ForkChoice -->|upload_now| Upload
+    ForkChoice -->|upload_later| Pause[wizardState equals<br/>awaiting_additional_files<br/>user exits]
+    ForkChoice -->|continue_degraded| Patch
+
+    Pause -.->|user returns| Upload
+    Refused -->|manual model pick| Patch
+    Refused -->|contact support| Stop([Onboarding stopped])
+
+    Patch["PATCH /api/analysis/classification<br/>sync, under 500 ms<br/>sets businessModel and classificationStatus"]
+
+    Patch --> Run["POST /api/analysis/run<br/>sync, ~2 s<br/>read businessModel, get rule allowlist<br/>runRulesEngine plus calculateMetrics"]
+
+    Run --> Recs[Recommendations created<br/>AI-eligible: aiEnhanced=false<br/>legacy or non-AI: aiEnhanced=true]
+    Run --> Metrics[(analysis-results<br/>metrics + topDebtors / Creditors)]
+
+    Recs --> Enhance["POST /api/analysis/ai-enhance-batch<br/>poll, 3 candidates per call, ~6-8 s<br/>rule_code prompts, 15 s per-call timeout"]
+    Enhance --> Done([Recommendations ready<br/>wizardState equals completed])
+
+    classDef sync fill:#d4edda,stroke:#28a745,color:#000
+    classDef poll fill:#cce5ff,stroke:#004085,color:#000
+    classDef wait fill:#fff3cd,stroke:#856404,color:#000
+    classDef terminal fill:#f8d7da,stroke:#dc3545,color:#000
+    class Upload,Classify,Patch,Run sync
+    class Recognize,Extract,Enhance poll
+    class AwaitConfirm,AwaitFork,Pause,Refused wait
+    class Stop,Done terminal
 ```
-┌─────────────┐     ┌─────────────┐     ┌──────────────┐
-│  1C:Accounting│     │  User       │     │  CSV Upload   │
-│  (external)  │────▶│  exports    │────▶│  /api/files/  │
-│              │     │  7 CSV files│     │  upload (sync)│
-└─────────────┘     └─────────────┘     └──────┬───────┘
-                                                │
-                                                ▼
-                          ┌────────────────────────────────────────┐
-                          │  Try identifyFile() + parseOSVFile()    │
-                          │  (regex + 7-col / 8-col deterministic)  │
-                          └──────────┬─────────────────────────────┘
-                                     │
-                       success       │       failure (header mismatch
-                          │          │        or strict-parser throw)
-                          ▼          ▼
-       parseStatus='success'   parseStatus='needs_ai_recognition'
-       parsedData.parsed       parsedData.raw only
-                                     │
-                                     ▼  (client polls, AI flag enabled)
-                          ┌────────────────────────────────────────┐
-                          │  POST /api/files/ai-recognize-batch     │
-                          │  (2 files / call, ~6 s wall time)       │
-                          │                                          │
-                          │  aiIdentifyFile()  →  Claude             │
-                          │   `file_recognition` prompt v2           │
-                          │   returns { accountCode, period,         │
-                          │     documentType, columnFormat }         │
-                          │                                          │
-                          │  parseOSVFileWithHints()                 │
-                          └──────────┬─────────────────────────────┘
-                                     │
-                       parser ok     │     parser fails after hints
-                          │          │
-                          ▼          ▼
-       parseStatus='success'   parseStatus='needs_ai_extraction'
-       parsedData.parsed +     parsedData.aiHints set
-       parsedData.aiHints                  │
-                                            ▼  (client polls, 1 file / call)
-                          ┌────────────────────────────────────────┐
-                          │  POST /api/files/ai-extract-next        │
-                          │  (1 file / call, ~9 s wall time, files  │
-                          │   > aiFileExtractionMaxKB truncated)    │
-                          │                                          │
-                          │  aiExtractData()  →  Claude              │
-                          │   `data_extraction` prompt v2            │
-                          │   returns full ParsedAccountData JSON    │
-                          │                                          │
-                          │  validateParsedAccountData()             │
-                          │   (schema + ±5% totals sanity check)     │
-                          └──────────┬─────────────────────────────┘
-                                     │
-                       valid         │       invalid / timeout
-                          ▼          ▼
-       parseStatus='success'   parseStatus='error'
-       parsedData.aiParsed     parseErrors.reason set
-       (parsedData.truncated   (raw retained for retry / forensic
-        if file was clipped)    review via aiRecognitionLog)
-                                     │
-                                     ▼  POST /api/analysis/run (sync, ~2 s)
-                          ┌────────────────────────────────────────┐
-                          │  Skip files in needs_ai_*               │
-                          │  Read order: parsed → aiParsed → re-parse│
-                          │                                          │
-                          │  runRulesEngine(data)   → RuleCandidate[]│
-                          │  calculateMetrics(data) → AnalysisMetrics│
-                          └──────────┬─────────────────────────────┘
-                                     │
-                  ┌──────────────────┼──────────────────────────┐
-                  ▼                  ▼                          ▼
-          ┌───────────────┐  ┌──────────────────┐    ┌─────────────────┐
-          │ analysis-      │  │ recommendations    │    │ /api/analysis/   │
-          │ results        │  │  • AI-eligible:    │    │ ai-audit         │
-          │ (1 record,     │  │     fallback text +│    │ (legacy strategic│
-          │  metrics +     │  │     aiEnhanced=false│    │  AI rec stream)  │
-          │  topDebtors/   │  │  • legacy/non-AI:   │    └─────────────────┘
-          │  Creditors)    │  │     final text +    │
-          └───────────────┘  │     aiEnhanced=true │
-                              └────────┬───────────┘
-                                       │  client polls
-                                       ▼
-                          ┌────────────────────────────────────────┐
-                          │  POST /api/analysis/ai-enhance-batch    │
-                          │  (3 candidates / call, ~6-8 s wall time)│
-                          │                                          │
-                          │  analyzeCandidates() in rule-analyzer:  │
-                          │   ├─ for each AI-eligible candidate:    │
-                          │   │   load prompt rule_<code>            │
-                          │   │   call Claude (15 s timeout)         │
-                          │   │   parse JSON, cap priority           │
-                          │   │   merge title/description/etc.       │
-                          │   └─ on failure → fallback template      │
-                          │                                          │
-                          │  Update each rec:                       │
-                          │   • success → aiEnhanced=true           │
-                          │   • failure → aiEnhanceFailedAt +       │
-                          │               aiEnhanceError            │
-                          │                                          │
-                          │  Returns { done, processed, failed,     │
-                          │            remaining }                  │
-                          └─────────────────────────────────────────┘
-```
+
+**Legend.** Green nodes — synchronous one-shot endpoints. Blue — client-polled batch endpoints (each call fits in 10 s). Yellow — wizard wait-states (user input or pause). Red — terminal nodes.
+
+**Key v1.2 additions** in this flow:
+- **Classify stage** between file pipeline and `/api/analysis/run`. Always one AI call. `aiClassificationEnabled=false` skips the call, defaults businessModel to `trading`.
+- **3-way fork** at `needs_data`: upload-now (re-enters pipeline), upload-later (pauses, user can leave and resume), continue-degraded (skips ahead with low-confidence model, marked `classificationStatus=degraded`).
+- **State machine** drives layout routing: each rendered screen depends on `users.wizardState`.
+- **Rule allowlist** filters which of the 9 rules run, based on the classified `businessModel`. See Section 10.
 
 ### Onboarding wizard stages (UI orchestration)
 
-The onboarding wizard runs the full sequence as five visible stages, hiding stages when their work is empty:
+The onboarding wizard runs the full sequence as visible stages, hiding stages when their work is empty:
 
-| # | Stage | Visible when | Endpoint |
-|---|-------|--------------|----------|
-| 1 | AI-распознавание файлов | `needs_ai_recognition` count > 0 | poll `/api/files/ai-recognize-batch` until done |
-| 2 | AI-извлечение данных | `needs_ai_extraction` count > 0 | poll `/api/files/ai-extract-next` until done |
-| 3 | Расчёт метрик | always | inside `/api/analysis/run` |
-| 4 | Формирование рекомендаций | always | inside `/api/analysis/run` |
-| 5 | AI-анализ рекомендаций | `aiRulesEnabled=true` and any `pendingAi > 0` | poll `/api/analysis/ai-enhance-batch` until done |
+| # | Stage | Visible when | Endpoint | Wizard state |
+|---|-------|--------------|----------|--------------|
+| 1 | AI-распознавание файлов | `needs_ai_recognition` count > 0 | poll `/api/files/ai-recognize-batch` until done | `recognizing` |
+| 2 | AI-извлечение данных | `needs_ai_extraction` count > 0 | poll `/api/files/ai-extract-next` until done | `extracting` |
+| 3 | Определение типа бизнеса (v1.2) | `aiClassificationEnabled=true` | call `/api/analysis/classify` (sync, ~5 s) | `classifying` |
+| 3a | Подтверждение модели (v1.2) | classification returned `success` or `needs_data` | UI screen, awaits user confirmation | `awaiting_confirmation` |
+| 3b | Развилка дозагрузки (v1.2) | classification returned `needs_data` | UI screen with 3 choices | `awaiting_confirmation` (variant fork) |
+| 3c | Пауза с возвратом (v1.2) | user chose `upload_later` | UI screen `/app/onboarding/resume` | `awaiting_additional_files` |
+| 3d | Отказ от анализа (v1.2) | classification returned `cannot_classify` | UI screen `/app/onboarding/refused` | `classification_refused` |
+| 4 | Расчёт метрик | always | inside `/api/analysis/run` | `analyzing` |
+| 5 | Формирование рекомендаций | always | inside `/api/analysis/run` | `analyzing` |
+| 6 | AI-анализ рекомендаций | `aiRulesEnabled=true` and any `pendingAi > 0` | poll `/api/analysis/ai-enhance-batch` until done | `enhancing` |
 
-Demo mode (`/api/demo/seed`) skips stages 1-2 entirely (canonical demo data) and reuses the same code path for stages 3-5.
+Demo mode (`/api/demo/seed`) skips stages 1-2 entirely (canonical demo data). Stage 3 still runs on demo data but is expected to return `trading` with high confidence on the canonical demo set.
 
 ### Supported File Types (1C OSV CSV)
 
-| Account Code | Account Name (Russian) | CSV Format | Domain |
-|-------------|----------------------|------------|--------|
-| 62 | Расчёты с покупателями | 7-column | Receivables |
-| 60 | Расчёты с поставщиками | 7-column | Payables |
-| 41 | Товары | 8-column | Inventory |
-| 10 | Материалы | 8-column | Materials |
-| 45 | Товары отгруженные | 8-column | Shipped Goods |
-| 90.01 | Выручка | 7-column | Revenue |
-| 90.02 | Себестоимость продаж | 7-column | COGS |
+| Account Code | Account Name (Russian) | CSV Format | Domain | Required (v1.2) |
+|-------------|----------------------|------------|--------|-----------------|
+| 62 | Расчёты с покупателями | 7-column | Receivables | Required |
+| 60 | Расчёты с поставщиками | 7-column | Payables | Required |
+| 41 | Товары | 8-column | Inventory | Required |
+| 10 | Материалы | 8-column | Materials | Required |
+| 45 | Товары отгруженные | 8-column | Shipped Goods | Required |
+| 90.01 | Выручка | 7-column | Revenue | Required |
+| 90.02 | Себестоимость продаж | 7-column | COGS | Required |
+| 26 | Общехозяйственные расходы | 7-column | Overhead | Recommended (v1.2) |
+| 20 | Основное производство | 7-column | WIP / production | Recommended (v1.2) |
+| 43 | Готовая продукция | 8-column | Finished goods | Recommended (v1.2) |
+| 76 | Расчёты с разными дебиторами/кредиторами | 7-column | Agency transit | Recommended (v1.2) |
+| 51 | Расчётный счёт | 7-column | Bank balance | Optional (v1.2, future use) |
+
+The `requiredAccountCodes`, `recommendedAccountCodes`, and `optionalAccountCodes` lists in `global-settings` (v1.2) make this configurable without redeployment.
 
 ---
 
@@ -1046,23 +1279,67 @@ All significant user and system actions are logged to the `event-log` collection
 |-----------|---------|
 | `auth.login` | Successful login |
 | `auth.logout` | Logout |
+| `auth.registered` | New user registered |
 | `access.request` | Public access request submitted |
+| `access.approved` | Admin approved an access request |
 | `invite.used` | Invite code redeemed during registration |
+| `onboarding.started` (v1.2) | User opened `/app` for the first time |
 | `onboarding.file_upload` | CSV file uploaded |
-| `onboarding.analysis_start` | Analysis triggered |
-| `onboarding.analysis_complete` | Analysis finished |
-| `onboarding.complete` | Onboarding completed |
+| `onboarding.minimum_set_complete` (v1.2) | All required accounts uploaded |
+| `onboarding.analysis_started` | User clicked "Start analysis" |
+| `onboarding.analysis_completed` | User reached `/inbox` |
+| `file.recognition_started` / `file.recognition_completed` (v1.2) | AI file-recognition lifecycle |
+| `file.extraction_started` / `file.extraction_completed` (v1.2) | AI file-extraction lifecycle |
+| `file.parse_error` (v1.2) | Deterministic or AI parsing failed |
+| `classification.started` (v1.2) | `/api/analysis/classify` invoked |
+| `classification.completed` (v1.2) | AI returned a classification (any status) |
+| `classification.confirmed` (v1.2) | User confirmed the model |
+| `classification.user_override` (v1.2) | User changed the AI-determined model |
+| `classification.additional_data_requested` (v1.2) | AI returned `needs_data` with specific accounts |
+| `classification.user_choice` (v1.2) | User picked a fork option (`upload_now` / `upload_later` / `continue_degraded`) |
+| `classification.degraded_accepted` (v1.2) | User accepted a low-confidence classification without uploading more files |
+| `classification.refused_manual_override` (v1.2) | After `cannot_classify`, user picked a model manually |
+| `classification.refused_contact_requested` (v1.2) | After `cannot_classify`, user chose to contact support |
+| `wizard.state_changed` (v1.2) | Any `users.wizardState` transition |
+| `wizard.paused` (v1.2) | Wizard moved to `awaiting_additional_files` |
+| `wizard.resumed` (v1.2) | User came back from pause |
+| `wizard.abandoned` (v1.2) | Cron-emitted: 24h+ idle in non-terminal state |
 | `recommendation.status_changed` | Recommendation moved to new status |
 | `recommendation.feedback` | User left feedback on recommendation |
 | `recommendation.text_copied` | User copied recommendation text |
 | `recommendation.viewed` | User opened recommendation detail |
-| `ai.request` | AI API call initiated; payload includes `promptKey`, `promptVersion`, `model` |
-| `ai.response` | AI API call returned; payload includes token counts, `durationMs`, and (for the file pipeline) `stage: 'file_recognition' \| 'data_extraction'` |
-| `ai.error` | AI API call failed or timed out; payload includes `error`, `promptKey`, and (for the file pipeline) `stage` |
+| `recommendation.due_date_changed` | User changed due date |
+| `task.overdue` | Background sweep marked a task as overdue |
+| `ai.request` | AI API call initiated; payload includes `promptKey`, `promptVersion`, `model`, optional `stage` |
+| `ai.response` | AI API call returned; payload includes token counts, `durationMs`, optional `stage` (`file_recognition` / `data_extraction` / `classification` / `rule_<code>`) |
+| `ai.error` | AI API call failed or timed out; payload includes `error`, `promptKey`, optional `stage` |
 | `ai.fallback` | AI unavailable, using rules only |
 | `page.view` | Client-side page navigation |
 
 The file pipeline writes a parallel per-file log to `uploaded-files.aiRecognitionLog` (see Section 5), useful for forensic review without joining `event-log` and `ai-usage-logs`.
+
+### Onboarding Funnel Analytics (v1.2)
+
+A separate **`onboarding-funnel-events` collection** stores one aggregated record per onboarding lifecycle (see Section 5). It is the primary data source for the admin funnel dashboard at `/admin/funnel`.
+
+**Why a separate collection.** Building a funnel from raw `event-log` requires expensive aggregation per user (sort all events, compute deltas). The aggregated collection holds pre-computed flags and durations so the dashboard reads it directly without aggregation queries. The raw `event-log` is retained for forensic review.
+
+**Update path:**
+
+```
+event handlers in API routes
+        │
+        ▼
+updateFunnelEvent(userId, patch)  ← idempotent helper from src/lib/funnel/
+        │
+        ├─ creates record on first onboarding.started
+        ├─ merges patch into existing record (only sets reachedXxx flags once)
+        └─ on terminal events, fills durationXxx via compute-durations.ts
+```
+
+**Maintenance.** A scheduled cron job (Vercel scheduled function or external trigger) runs `abandoned-sweep.ts` hourly to finalize stale `in_progress` records as `abandoned` (24h+ idle).
+
+**Dashboard.** A custom Payload Admin page at `/admin/funnel` renders six blocks: funnel steps, fork analysis (where users land in `needs_data`), model distribution, override pairs, processing durations (p50/p95/p99), and cohort retention. See `analytics-spec.md` for full layout, query specs, and dashboard endpoint contracts.
 
 ### AI Usage Tracking
 
