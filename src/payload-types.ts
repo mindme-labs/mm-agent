@@ -155,6 +155,22 @@ export interface User {
   companyName?: string | null;
   inn?: string | null;
   companyType?: ('ip' | 'ooo') | null;
+  wizardState:
+    | 'idle'
+    | 'uploading'
+    | 'recognizing'
+    | 'extracting'
+    | 'classifying'
+    | 'awaiting_confirmation'
+    | 'awaiting_additional_files'
+    | 'classification_refused'
+    | 'analyzing'
+    | 'enhancing'
+    | 'completed';
+  /**
+   * Сколько раз AI-классификация запускалась в текущем онбординге. Сбрасывается при старте нового онбординга.
+   */
+  currentClassificationAttempts?: number | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -344,6 +360,57 @@ export interface AnalysisResult {
   aiAuditSummary?: string | null;
   analysisPhase?: ('rules_done' | 'ai_pending' | 'ai_complete' | 'ai_error') | null;
   isDemo?: boolean | null;
+  businessModel?:
+    | (
+        | 'project'
+        | 'trading'
+        | 'production'
+        | 'subscription'
+        | 'consulting'
+        | 'agency'
+        | 'project_trading'
+        | 'production_project'
+        | 'consulting_subscription'
+        | 'trading_agency'
+        | 'subscription_consulting'
+        | 'production_trading'
+        | 'clinic'
+      )
+    | null;
+  businessModelConfidence?: number | null;
+  businessModelRationale?: string | null;
+  /**
+   * inventory_balance_41, wip_balance_20, finished_goods_43, revenue_regularity_score, fot_share_in_cogs, agency_transit_share, account_26_destination, _missing[]
+   */
+  businessModelIndicators?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  businessModelUserOverridden?: boolean | null;
+  businessModelOriginalAi?: string | null;
+  classificationStatus?: ('success' | 'degraded' | 'refused_manual' | 'disabled') | null;
+  /**
+   * Массив строк (кодов счетов), которые AI попросил дозагрузить для повышения точности.
+   */
+  requestedAdditionalAccounts?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  classificationAttempts?: number | null;
+  /**
+   * Заполняется AI, когда сигналы выглядят как гибрид, но не складываются в логичную бизнес-историю (артефакт мусора).
+   */
+  dataQualityWarning?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -571,6 +638,8 @@ export interface UsersSelect<T extends boolean = true> {
   companyName?: T;
   inn?: T;
   companyType?: T;
+  wizardState?: T;
+  currentClassificationAttempts?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -691,6 +760,16 @@ export interface AnalysisResultsSelect<T extends boolean = true> {
   aiAuditSummary?: T;
   analysisPhase?: T;
   isDemo?: T;
+  businessModel?: T;
+  businessModelConfidence?: T;
+  businessModelRationale?: T;
+  businessModelIndicators?: T;
+  businessModelUserOverridden?: T;
+  businessModelOriginalAi?: T;
+  classificationStatus?: T;
+  requestedAdditionalAccounts?: T;
+  classificationAttempts?: T;
+  dataQualityWarning?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -837,6 +916,57 @@ export interface GlobalSetting {
    * Файлов на один вызов /api/files/ai-recognize-batch (Vercel Hobby: 2, Pro: 3-5)
    */
   aiFileBatchSize?: number | null;
+  /**
+   * Если выключено — все юзеры классифицируются как «Торговая» и применяются все 9 правил (поведение v3.2)
+   */
+  aiClassificationEnabled?: boolean | null;
+  /**
+   * Ниже этого порога юзер обязательно подтверждает модель вручную
+   */
+  classificationConfidenceThreshold?: number | null;
+  /**
+   * При confidence ≥ этого порога экран подтверждения автоматически закрывается через 3 сек
+   */
+  classificationAutoConfirmThreshold?: number | null;
+  /**
+   * Если включено — при высокой уверенности юзер пропускает экран подтверждения автоматически
+   */
+  classificationAutoConfirmEnabled?: boolean | null;
+  /**
+   * После этого числа попыток — только продолжение в degraded-режиме (без новой развилки)
+   */
+  maxClassificationAttempts?: number | null;
+  /**
+   * Email или ссылка для связи при отказе классификации (например: support@mmlabs.ru)
+   */
+  supportContact?: string | null;
+  /**
+   * Минимальный набор счетов, без которых онбординг не начнётся
+   */
+  requiredAccountCodes?:
+    | {
+        code: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Повышают точность классификации, но не блокируют процесс
+   */
+  recommendedAccountCodes?:
+    | {
+        code: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Для будущего анализа ликвидности и т.п.
+   */
+  optionalAccountCodes?:
+    | {
+        code: string;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -855,6 +985,30 @@ export interface GlobalSettingsSelect<T extends boolean = true> {
   aiFileExtractionEnabled?: T;
   aiFileExtractionMaxKB?: T;
   aiFileBatchSize?: T;
+  aiClassificationEnabled?: T;
+  classificationConfidenceThreshold?: T;
+  classificationAutoConfirmThreshold?: T;
+  classificationAutoConfirmEnabled?: T;
+  maxClassificationAttempts?: T;
+  supportContact?: T;
+  requiredAccountCodes?:
+    | T
+    | {
+        code?: T;
+        id?: T;
+      };
+  recommendedAccountCodes?:
+    | T
+    | {
+        code?: T;
+        id?: T;
+      };
+  optionalAccountCodes?:
+    | T
+    | {
+        code?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

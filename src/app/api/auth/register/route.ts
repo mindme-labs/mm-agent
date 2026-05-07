@@ -62,6 +62,8 @@ export async function POST(request: NextRequest) {
         trialExpiresAt: trialExpiresAt.toISOString(),
         analysisStatus: 'none',
         inviteCode: inviteCode?.trim().toUpperCase() || undefined,
+        wizardState: 'idle',
+        currentClassificationAttempts: 0,
       },
     })
 

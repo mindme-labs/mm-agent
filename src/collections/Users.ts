@@ -100,5 +100,42 @@ export const Users: CollectionConfig = {
         { label: 'ООО', value: 'ooo' },
       ],
     },
+    // v3.3.1 — wizard state machine. Tracks the user's position in the
+    // adaptive onboarding flow. See docs/cursor-dev-spec.md iter-17/21.
+    {
+      name: 'wizardState',
+      type: 'select',
+      label: 'Состояние wizard',
+      required: true,
+      defaultValue: 'idle',
+      options: [
+        { label: 'Idle (не начат)', value: 'idle' },
+        { label: 'Загрузка файлов', value: 'uploading' },
+        { label: 'AI: распознавание', value: 'recognizing' },
+        { label: 'AI: извлечение данных', value: 'extracting' },
+        { label: 'AI: классификация', value: 'classifying' },
+        { label: 'Ожидание подтверждения модели', value: 'awaiting_confirmation' },
+        { label: 'Ожидание дозагрузки файлов', value: 'awaiting_additional_files' },
+        { label: 'Отказ от классификации', value: 'classification_refused' },
+        { label: 'Расчёт правил', value: 'analyzing' },
+        { label: 'AI: обогащение текстов', value: 'enhancing' },
+        { label: 'Завершён', value: 'completed' },
+      ],
+      admin: {
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'currentClassificationAttempts',
+      type: 'number',
+      label: 'Попыток классификации',
+      defaultValue: 0,
+      min: 0,
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        description: 'Сколько раз AI-классификация запускалась в текущем онбординге. Сбрасывается при старте нового онбординга.',
+      },
+    },
   ],
 }

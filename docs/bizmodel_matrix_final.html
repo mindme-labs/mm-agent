@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Матрица: бизнес-модель и бухучёт</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;background:#fff;color:#1a1a1a;padding:32px 20px;max-width:1200px;margin:0 auto}
+h1{font-size:18px;font-weight:500;margin-bottom:4px}
+.sub{font-size:13px;color:#666;margin-bottom:16px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;font-size:12px;color:#555}
+.leg{display:flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot-s{background:#1D9E75}.dot-m{background:#EF9F27}.dot-w{background:#ccc}
+.tabs{display:flex;gap:0;margin-bottom:0}
+.tab{padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #ddd;border-bottom:none;border-radius:8px 8px 0 0;background:#f5f5f3;color:#888;transition:all .15s}
+.tab.active{background:#fff;color:#1a1a1a;border-bottom-color:#fff}
+.tbl-wrap{border:1px solid #ddd;border-radius:0 8px 8px 8px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:800px}
+thead th{font-weight:500;font-size:11px;color:#666;padding:8px;text-align:left;border-bottom:2px solid #333;vertical-align:bottom;line-height:1.3}
+thead th:first-child{min-width:160px}
+tbody tr:hover td{background:#f9f9f7}
+td{padding:8px;border-bottom:1px solid #eee;vertical-align:middle;line-height:1.4}
+td:first-child{font-weight:500}
+.cell{display:flex;align-items:flex-start;gap:5px}
+.ind{font-size:11px;color:#888;line-height:1.35}
+.sig{font-size:11px;font-weight:500;color:#1a1a1a;line-height:1.35}
+.mi{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:600;flex-shrink:0;margin-right:5px}
+.sec-row td{background:#e8e8e4;font-weight:500;font-size:12px;color:#333;padding:6px 8px;border:none}
+.ht{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:500;margin-left:4px}
+.ht-real{background:#E1F5EE;color:#0F6E56}
+.ht-trash{background:#FCEBEB;color:#A32D2D}
+.ht-med{background:#E6F1FB;color:#185FA5}
+.ic-proj{background:#EEEDFE;color:#534AB7}.ic-trade{background:#E6F1FB;color:#185FA5}
+.ic-prod{background:#FAEEDA;color:#854F0B}.ic-saas{background:#EAF3DE;color:#3B6D11}
+.ic-cons{background:#FAECE7;color:#993C1D}.ic-agent{background:#FBEAF0;color:#993556}
+.ic-hyb{background:#F1EFE8;color:#5F5E5A}.ic-med{background:#E6F1FB;color:#185FA5}
+.note{margin-top:16px;font-size:11px;color:#555;line-height:1.6;border-left:3px solid #ddd;padding-left:12px}
+.note b{color:#1a1a1a}
+@media(prefers-color-scheme:dark){
+body{background:#1a1a1a;color:#e0dfd8}
+.sub,.leg,.ind{color:#999}.sig{color:#e0dfd8}
+thead th{color:#999;border-bottom-color:#555}
+tbody tr:hover td{background:#252523}
+td{border-bottom-color:#2e2e2b}
+.tab{background:#252523;color:#777;border-color:#444}
+.tab.active{background:#1a1a1a;color:#e0dfd8;border-bottom-color:#1a1a1a}
+.tbl-wrap{border-color:#444}
+.sec-row td{background:#333;color:#ccc}
+.dot-w{background:#555}
+.note{color:#888;border-left-color:#444}.note b{color:#e0dfd8}
+.ht-real{background:#085041;color:#9FE1CB}
+.ht-trash{background:#501313;color:#F09595}
+.ht-med{background:#042C53;color:#85B7EB}
+.ic-proj{background:#26215C;color:#AFA9EC}.ic-trade{background:#042C53;color:#85B7EB}
+.ic-prod{background:#412402;color:#FAC775}.ic-saas{background:#173404;color:#C0DD97}
+.ic-cons{background:#4A1B0C;color:#F0997B}.ic-agent{background:#4B1528;color:#ED93B1}
+.ic-med{background:#042C53;color:#85B7EB}
+}
+</style>
+</head>
+<body>
+<h1>Матрица: бизнес-модель ↔ бухгалтерские индикаторы</h1>
+<p class="sub">Базовые модели · Гибриды · Отраслевые паттерны</p>
+<div class="legend">
+<div class="leg"><div class="dot dot-s"></div>Сильный</div>
+<div class="leg"><div class="dot dot-m"></div>Умеренный</div>
+<div class="leg"><div class="dot dot-w"></div>Слабый</div>
+<div class="leg"><span class="ht ht-real">реальный гибрид</span></div>
+<div class="leg"><span class="ht ht-trash">артефакт мусора</span></div>
+<div class="leg"><span class="ht ht-med">отраслевой</span></div>
+</div>
+<div class="tabs">
+<div class="tab active" onclick="showTab('all',this)">Все</div>
+<div class="tab" onclick="showTab('base',this)">Базовые</div>
+<div class="tab" onclick="showTab('hybrid',this)">Гибриды</div>
+<div class="tab" onclick="showTab('health',this)">Здравоохр.</div>
+</div>
+<div class="tbl-wrap">
+<table><thead><tr>
+<th>Модель</th><th>Счёт 26</th><th>Аналитика по сделке</th><th>Остатки склада</th>
+<th>НЗП / лаг</th><th>Регулярность выручки</th><th>Доля зарплат</th><th>Транзит 76/62</th>
+</tr></thead><tbody id="tb"></tbody></table>
+</div>
+<div class="note" id="note"></div>
+<script>
+var D={s:'dot-s',m:'dot-m',w:'dot-w'};
+function c(l,t,d){return{l:l,t:t,d:d||''};}
+var base=[
+{n:'Проектная',s:'сделка = проект',ic:'ic-proj',lt:'П',
+d:[c('s','→ 90 напрямую','директ-костинг'),c('s','Очень высокая','расходы → договор'),c('w','Минимален',''),c('w','Нет НЗП',''),c('w','Нерегулярная','по сделкам'),c('m','Умеренная',''),c('w','Нет','')]},
+{n:'Торговая',s:'inventory-driven',ic:'ic-trade',lt:'Т',
+d:[c('m','→ 20 или 44','на себестоимость'),c('w','Слабая','связь разорвана'),c('s','Большие остатки','сч. 41'),c('m','Лаг','закупка→продажа'),c('m','Ритмичная',''),c('w','Низкая',''),c('w','Нет','')]},
+{n:'Производственная',s:'manufacturing',ic:'ic-prod',lt:'Пр',
+d:[c('s','→ 20 через распр.','сложная аллокация'),c('m','По заказу/партии',''),c('s','Материалы + НЗП','сч. 10, 20, 43'),c('s','Явный лаг + НЗП','сч. 20 «висит»'),c('m','По циклу',''),c('m','Средняя',''),c('w','Нет','')]},
+{n:'Подписочная',s:'SaaS / сервис',ic:'ic-saas',lt:'S',
+d:[c('m','→ 90 или 20','уч. политика'),c('m','По клиенту','не по сделке'),c('w','Нет',''),c('w','Нет лага',''),c('s','Равномерная','повтор. поступления'),c('s','Высокая','COGS = ФОТ'),c('w','Нет','')]},
+{n:'Консалтинг',s:'time-based',ic:'ic-cons',lt:'К',
+d:[c('m','→ 90 напрямую',''),c('w','Слабая','нет привязки'),c('w','Нет',''),c('w','Нет',''),c('m','Нерегулярная',''),c('s','Доминирует','весь COGS = ФОТ'),c('w','Нет','')]},
+{n:'Агентская',s:'комиссионная',ic:'ic-agent',lt:'А',
+d:[c('w','Незначительна',''),c('m','По контрагенту',''),c('w','Нет',''),c('w','Нет',''),c('m','Сезонно',''),c('m','Умеренная',''),c('s','Высокий транзит','оборот >> прибыль')]}
+];
+var hybrids=[
+{n:'Проект + торговля',s:'интеграторы, строители',ic:'ic-hyb',lt:'П+Т',tag:'real',
+trash:'Закупки не привязаны к проектам, аналитика «размазана»',
+d:[c('s','→ 90',''),c('m','Частичная','часть по договору'),c('m','Буфер на складе','сч. 41+10'),c('w','Малый',''),c('w','Нерегулярная',''),c('m','Умеренная',''),c('w','Нет','')]},
+{n:'Производство + проект',s:'под заказ, мебель',ic:'ic-hyb',lt:'Пр+П',tag:'real',
+trash:'НЗП висит без привязки к заказу, калькуляция «средняя»',
+d:[c('s','→ 20 позаказно',''),c('s','По заказу = проект',''),c('s','Материалы','сч. 10'),c('s','НЗП по заказам','сч. 20'),c('w','Нерегулярная',''),c('m','Средняя',''),c('w','Нет','')]},
+{n:'Консалтинг + подписка',s:'ретейнер + проекты',ic:'ic-hyb',lt:'К+S',tag:'real',
+trash:'Разовые оплаты как «регулярные», авансы не разбиты по периодам',
+d:[c('m','→ 90',''),c('w','Слабая',''),c('w','Нет',''),c('w','Нет',''),c('m','Частично регулярная','ретейнер'),c('s','Доминирует','ФОТ'),c('w','Нет','')]},
+{n:'Торговля + агент',s:'свой товар + комиссия',ic:'ic-hyb',lt:'Т+А',tag:'real',
+trash:'Чужой товар на 41 как свой, оборот завышен',
+d:[c('m','→ 20 или 44',''),c('m','Частичная',''),c('m','Склад частичный','свой товар'),c('m','Лаг',''),c('m','Ритмичная',''),c('w','Низкая',''),c('m','Частичный транзит','76 по чужому')]},
+{n:'SaaS + консалтинг',s:'подписка + внедрение',ic:'ic-hyb',lt:'S+К',tag:'real',
+trash:'Внедрение учтено как подписка, маржа «слипается»',
+d:[c('m','→ 90',''),c('m','По клиенту','проекты внедрения'),c('w','Нет',''),c('w','Нет',''),c('m','Базово регулярная','скачки'),c('s','Высокая','ФОТ'),c('w','Нет','')]},
+{n:'Производство + торговля',s:'своё + перепродажа',ic:'ic-hyb',lt:'Пр+Т',tag:'real',
+trash:'Перепродажа через 20 как производство, себестоимость искажена',
+d:[c('s','→ 20 частично','на производство'),c('m','Частичная',''),c('s','Большой склад','сч. 10+41+43'),c('m','НЗП по производству',''),c('m','Ритмичная',''),c('m','Средняя',''),c('w','Нет','')]}
+];
+var health=[
+{n:'Частная клиника',s:'приём + процедуры',ic:'ic-med',lt:'ЧК',tag:'med',closest:'Консалтинг + торговля',
+d:[c('m','→ 90 или 20',''),c('m','По пациенту','частично'),c('m','Медикаменты','сч. 10'),c('w','Минимален',''),c('m','Ритмичная','не регулярная'),c('s','Высокая','ФОТ врачей'),c('w','Нет','')]}
+];
+
+function rr(r,showTrash){
+var h='<tr><td><div style="display:flex;align-items:center;gap:5px"><span class="mi '+r.ic+'">'+r.lt+'</span><div>'+r.n+'<br><span class="ind">'+r.s+'</span>';
+if(r.tag==='real')h+='<span class="ht ht-real">гибрид</span>';
+if(r.tag==='med')h+='<span class="ht ht-med">'+r.closest+'</span>';
+h+='</div></div></td>';
+r.d.forEach(function(c){
+h+='<td><div class="cell"><div class="dot '+D[c.l]+'"></div><div>';
+h+=c.l!=='w'?'<div class="sig">'+c.t+'</div>':'<div class="ind">'+c.t+'</div>';
+if(c.d)h+='<div class="ind">'+c.d+'</div>';
+h+='</div></div></td>';
+});
+h+='</tr>';
+if(showTrash&&r.trash)h+='<tr><td colspan="8" style="padding:3px 8px 6px 32px;border-bottom:1px solid #eee"><span class="ht ht-trash">артефакт мусора</span> <span class="ind">'+r.trash+'</span></td></tr>';
+return h;
+}
+function sec(t){return '<tr class="sec-row"><td colspan="8">'+t+'</td></tr>';}
+function showTab(m,el){
+document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+el.classList.add('active');
+var tb=document.getElementById('tb'),h='';
+if(m==='all'||m==='base'){h+=sec('Базовые модели');base.forEach(function(r){h+=rr(r,false);});}
+if(m==='all'||m==='hybrid'){h+=sec('Гибриды');hybrids.forEach(function(r){h+=rr(r,true);});}
+if(m==='all'||m==='health'){h+=sec('Здравоохранение');health.forEach(function(r){h+=rr(r,false);});}
+tb.innerHTML=h;
+var nt=document.getElementById('note');
+if(m==='hybrid')nt.innerHTML='Гибриды дают <b>смешанные сигналы</b>. Ключ: если индикаторы двух моделей <b>не складываются в логичную бизнес-историю</b> — это артефакт кривого учёта, а не реальный гибрид.';
+else if(m==='health')nt.innerHTML='Частная клиника — гибрид <b>консалтинга</b> (время врача = основной ресурс, ФОТ доминирует) и <b>торговли</b> (медикаменты и расходники на складе). Отличается от чистого консалтинга наличием материальных запасов на сч. 10.';
+else nt.innerHTML='Диагностика: <b>26→90 + аналитика</b> = проектная. <b>Остаток 41</b> = торговля. <b>НЗП на 20</b> = производство. <b>Оборот >> прибыль на 76/62</b> = агент. <b>ФОТ + нет склада</b> = консалтинг/SaaS. Гибрид vs мусор: сигналы должны складываться в логичную бизнес-историю.';
+}
+showTab('all',document.querySelector('.tab'));
+</script>
+</body>
+</html>

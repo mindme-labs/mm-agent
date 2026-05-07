@@ -108,5 +108,106 @@ export const GlobalSettings: GlobalConfig = {
         description: 'Файлов на один вызов /api/files/ai-recognize-batch (Vercel Hobby: 2, Pro: 3-5)',
       },
     },
+    // v3.3.1 — business model classification flags.
+    // When aiClassificationEnabled=false, the system behaves exactly as v3.2:
+    // all 9 rules apply and businessModel defaults to 'trading'.
+    {
+      name: 'aiClassificationEnabled',
+      type: 'checkbox',
+      label: 'AI-классификация бизнеса включена',
+      defaultValue: true,
+      admin: {
+        description: 'Если выключено — все юзеры классифицируются как «Торговая» и применяются все 9 правил (поведение v3.2)',
+      },
+    },
+    {
+      name: 'classificationConfidenceThreshold',
+      type: 'number',
+      label: 'Порог уверенности классификации',
+      defaultValue: 0.7,
+      min: 0,
+      max: 1,
+      admin: {
+        description: 'Ниже этого порога юзер обязательно подтверждает модель вручную',
+      },
+    },
+    {
+      name: 'classificationAutoConfirmThreshold',
+      type: 'number',
+      label: 'Порог auto-confirm',
+      defaultValue: 0.85,
+      min: 0,
+      max: 1,
+      admin: {
+        description: 'При confidence ≥ этого порога экран подтверждения автоматически закрывается через 3 сек',
+      },
+    },
+    {
+      name: 'classificationAutoConfirmEnabled',
+      type: 'checkbox',
+      label: 'Auto-confirm включён',
+      defaultValue: false,
+      admin: {
+        description: 'Если включено — при высокой уверенности юзер пропускает экран подтверждения автоматически',
+      },
+    },
+    {
+      name: 'maxClassificationAttempts',
+      type: 'number',
+      label: 'Максимум попыток классификации',
+      defaultValue: 3,
+      min: 1,
+      max: 10,
+      admin: {
+        description: 'После этого числа попыток — только продолжение в degraded-режиме (без новой развилки)',
+      },
+    },
+    {
+      name: 'supportContact',
+      type: 'text',
+      label: 'Контакт поддержки',
+      defaultValue: '',
+      admin: {
+        description: 'Email или ссылка для связи при отказе классификации (например: support@mmlabs.ru)',
+      },
+    },
+    {
+      name: 'requiredAccountCodes',
+      type: 'array',
+      label: 'Обязательные счета',
+      defaultValue: [
+        { code: '90.01' },
+        { code: '90.02' },
+        { code: '60' },
+        { code: '62' },
+        { code: '10' },
+        { code: '41' },
+        { code: '45' },
+      ],
+      fields: [{ name: 'code', type: 'text', required: true }],
+      admin: {
+        description: 'Минимальный набор счетов, без которых онбординг не начнётся',
+      },
+    },
+    {
+      name: 'recommendedAccountCodes',
+      type: 'array',
+      label: 'Рекомендуемые счета',
+      defaultValue: [{ code: '26' }, { code: '20' }, { code: '43' }, { code: '76' }],
+      fields: [{ name: 'code', type: 'text', required: true }],
+      admin: {
+        description: 'Повышают точность классификации, но не блокируют процесс',
+      },
+    },
+    {
+      name: 'optionalAccountCodes',
+      type: 'array',
+      label: 'Опциональные счета',
+      defaultValue: [{ code: '51' }],
+      fields: [{ name: 'code', type: 'text', required: true }],
+      admin: {
+        description: 'Для будущего анализа ликвидности и т.п.',
+      },
+    },
   ],
 }

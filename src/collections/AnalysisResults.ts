@@ -132,5 +132,103 @@ export const AnalysisResults: CollectionConfig = {
       label: 'Демо-данные',
       defaultValue: false,
     },
+    // v3.3.1 — business model classification. Populated by AI classifier
+    // (or set to safe default 'trading' when classification is disabled).
+    // See docs/cursor-dev-spec.md iter-17..19.
+    {
+      type: 'collapsible',
+      label: 'Классификация бизнес-модели',
+      admin: { initCollapsed: true },
+      fields: [
+        {
+          name: 'businessModel',
+          type: 'select',
+          label: 'Бизнес-модель',
+          defaultValue: 'trading',
+          options: [
+            { label: 'Проектная', value: 'project' },
+            { label: 'Торговая', value: 'trading' },
+            { label: 'Производственная', value: 'production' },
+            { label: 'Подписочная', value: 'subscription' },
+            { label: 'Консалтинг', value: 'consulting' },
+            { label: 'Агентская', value: 'agency' },
+            { label: 'Проект + Торговля', value: 'project_trading' },
+            { label: 'Производство + Проект', value: 'production_project' },
+            { label: 'Консалтинг + Подписка', value: 'consulting_subscription' },
+            { label: 'Торговля + Агент', value: 'trading_agency' },
+            { label: 'Подписка + Консалтинг', value: 'subscription_consulting' },
+            { label: 'Производство + Торговля', value: 'production_trading' },
+            { label: 'Частная клиника', value: 'clinic' },
+          ],
+        },
+        {
+          name: 'businessModelConfidence',
+          type: 'number',
+          label: 'Уверенность AI (0–1)',
+          min: 0,
+          max: 1,
+        },
+        {
+          name: 'businessModelRationale',
+          type: 'textarea',
+          label: 'Обоснование AI',
+        },
+        {
+          name: 'businessModelIndicators',
+          type: 'json',
+          label: 'Индикаторы',
+          admin: {
+            description: 'inventory_balance_41, wip_balance_20, finished_goods_43, revenue_regularity_score, fot_share_in_cogs, agency_transit_share, account_26_destination, _missing[]',
+          },
+        },
+        {
+          name: 'businessModelUserOverridden',
+          type: 'checkbox',
+          label: 'Переопределено пользователем',
+          defaultValue: false,
+        },
+        {
+          name: 'businessModelOriginalAi',
+          type: 'text',
+          label: 'Изначальная модель AI (до override)',
+        },
+        {
+          name: 'classificationStatus',
+          type: 'select',
+          label: 'Статус классификации',
+          defaultValue: 'disabled',
+          options: [
+            { label: 'Успешно', value: 'success' },
+            { label: 'Degraded (неполные данные)', value: 'degraded' },
+            { label: 'Refused (ручной выбор)', value: 'refused_manual' },
+            { label: 'Disabled (классификация выключена)', value: 'disabled' },
+          ],
+        },
+        {
+          name: 'requestedAdditionalAccounts',
+          type: 'json',
+          label: 'Запрошенные счета для уточнения',
+          defaultValue: [],
+          admin: {
+            description: 'Массив строк (кодов счетов), которые AI попросил дозагрузить для повышения точности.',
+          },
+        },
+        {
+          name: 'classificationAttempts',
+          type: 'number',
+          label: 'Попыток классификации',
+          defaultValue: 0,
+          min: 0,
+        },
+        {
+          name: 'dataQualityWarning',
+          type: 'textarea',
+          label: 'Предупреждение о качестве данных',
+          admin: {
+            description: 'Заполняется AI, когда сигналы выглядят как гибрид, но не складываются в логичную бизнес-историю (артефакт мусора).',
+          },
+        },
+      ],
+    },
   ],
 }
