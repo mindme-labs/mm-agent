@@ -2,23 +2,42 @@
 
 import { useState } from 'react'
 
+interface SeedResponse {
+  ok: boolean
+  created: number
+  updated: number
+  skipped: number
+  total: number
+  mode: 'insert_only' | 'upsert'
+}
+
 export default function SeedPromptsButton() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const [result, setResult] = useState('')
 
+  // Always upsert: re-clicking after a code-side prompt edit should re-version
+  // existing rows, not silently skip them. This is the failure mode that bit
+  // us when rolling out v3.3.1's `business_model_classification` prompt.
   const handleSeed = async () => {
     setStatus('loading')
     setResult('')
     try {
-      const res = await fetch('/api/ai/seed-prompts', { method: 'POST' })
-      const data = await res.json()
-      if (!res.ok) {
+      const res = await fetch('/api/ai/seed-prompts?upsert=true', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const data = (await res.json()) as Partial<SeedResponse> & { error?: string }
+      if (!res.ok || !data.ok) {
         setStatus('error')
         setResult(data.error || 'Ошибка')
         return
       }
       setStatus('done')
-      setResult(`Создано: ${data.created}, пропущено: ${data.skipped}`)
+      const parts = []
+      if (typeof data.created === 'number') parts.push(`создано ${data.created}`)
+      if (typeof data.updated === 'number') parts.push(`обновлено ${data.updated}`)
+      if (typeof data.skipped === 'number' && data.skipped > 0) parts.push(`пропущено ${data.skipped}`)
+      setResult(parts.join(', ') || 'готово')
     } catch (err) {
       setStatus('error')
       setResult(err instanceof Error ? err.message : 'Сетевая ошибка')
@@ -37,7 +56,7 @@ export default function SeedPromptsButton() {
         AI-промпты
       </h3>
       <p style={{ margin: '0 0 12px', fontSize: 14, color: '#666' }}>
-        Загрузить 4 стандартных промпта для AI-сервиса (file_recognition, data_extraction, recommendation_text, audit_working_capital). Существующие промпты не перезаписываются.
+        Загрузить или обновить системные промпты в БД (business_model_classification, file_recognition, data_extraction, recommendation_text, enhance_recommendation, audit_working_capital, плюс per-rule промпты). Существующие записи пере-версируются — версия инкрементируется на 1, тексты заменяются на актуальные из кода.
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
@@ -54,7 +73,7 @@ export default function SeedPromptsButton() {
             borderRadius: 6,
             cursor: status === 'loading' ? 'wait' : 'pointer',
           }}>
-          {status === 'loading' ? 'Загрузка...' : 'Загрузить промпты'}
+          {status === 'loading' ? 'Загрузка...' : 'Загрузить / обновить промпты'}
         </button>
         {result && (
           <span style={{
