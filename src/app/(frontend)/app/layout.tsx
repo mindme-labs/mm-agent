@@ -33,7 +33,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const reqHeaders = await headers()
   const path = pathFromHeaders(reqHeaders)
 
-  if (!user.hasCompletedOnboarding) {
+  // Admins skip the wizard routing entirely — they may be in the system
+  // without ever going through onboarding (e.g., seeded directly via Payload
+  // Admin) and they need access to admin-only routes like /app/admin/funnel.
+  if (!user.hasCompletedOnboarding && user.role !== 'admin') {
     const ws = user.wizardState ?? 'idle'
 
     // Pause -> resume screen.
@@ -104,7 +107,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     }
   }
 
-  const isOnboarding = !user.hasCompletedOnboarding
+  // Admins always get the full app shell (with sidebar, header, etc.) so
+  // they can navigate to /app/admin/funnel — bypass the wizard-only chrome.
+  const isOnboarding = !user.hasCompletedOnboarding && user.role !== 'admin'
 
   if (isOnboarding) {
     return (
