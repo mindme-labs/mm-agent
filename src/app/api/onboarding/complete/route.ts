@@ -15,7 +15,12 @@ export async function POST() {
     await payload.update({
       collection: 'users',
       id: user.id,
-      data: { hasCompletedOnboarding: true },
+      data: {
+        hasCompletedOnboarding: true,
+        // v3.3.1 — terminal wizard state. Layout uses this to short-circuit
+        // wizard routing for users who finished onboarding.
+        wizardState: 'completed',
+      },
     })
 
     await logEvent(user.id, 'onboarding.complete', undefined, undefined, {

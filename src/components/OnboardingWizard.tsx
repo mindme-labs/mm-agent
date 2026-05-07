@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 
 const HOW_IT_WORKS = [
   {
@@ -465,6 +466,7 @@ async function safeFetch(url: string, opts?: RequestInit): Promise<{ ok: boolean
 }
 
 function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) {
+  const router = useRouter()
   const [current, setCurrent] = useState(0)
   const [done, setDone] = useState(false)
   const [recommendationCount, setRecommendationCount] = useState(0)
@@ -558,43 +560,29 @@ function AnalysisScreen({ useDemo, onComplete, onCancel }: AnalysisScreenProps) 
         }
       }
 
-      // === Metrics + rules + persist (single backend call) ===
+      // === v3.3.1 — hand off to AI classification ===
+      // Files are recognized + extracted. Trigger classification, then push
+      // to /app/onboarding so the server-side wizardState switch takes over
+      // (renders ClassificationConfirm / ClassificationFork / etc.).
+      // The classify endpoint also short-circuits to 'trading' when AI
+      // classification is disabled, so this single path covers both modes.
       setCurrent(STAGE_METRICS)
-      await new Promise(r => setTimeout(r, 400))
-      setCurrent(STAGE_RULES)
+      await new Promise(r => setTimeout(r, 200))
 
-      const { ok: runOk, data: runData } = await safeFetch('/api/analysis/run', { method: 'POST' })
-      if (!runOk) {
-        setError((runData.error as string) || 'Ошибка анализа')
+      const { ok: classifyOk, data: classifyData } = await safeFetch('/api/analysis/classify', {
+        method: 'POST',
+      })
+      if (!classifyOk) {
+        setError((classifyData.error as string) || 'Ошибка классификации')
         running.current = false
         return
       }
-      const total = (runData.total as number) ?? (runData.recommendationCount as number) ?? 0
-      setRecommendationCount(total)
 
-      // === AI enhancement (chunked batch polling) ===
-      setCurrent(STAGE_AI_ENHANCE)
-      for (let attempt = 0; attempt < 30; attempt++) {
-        const { ok, data } = await safeFetch('/api/analysis/ai-enhance-batch', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
-        })
-        if (!ok) break
-
-        const status = await safeFetch('/api/analysis/status')
-        if (status.ok) {
-          setEnhancedCount((status.data.enhanced as number) ?? 0)
-        }
-
-        if (data.done) break
-        if ((data.processed as number) === 0 && (data.failed as number) === 0) break
-        await new Promise(r => setTimeout(r, 300))
-      }
-
-      setCurrent(STAGE_AI_ENHANCE + 1)
-      await new Promise(r => setTimeout(r, 300))
-      setDone(true)
+      // The wizardState is now 'awaiting_confirmation' or 'classification_refused'.
+      // Routing handles the rest — push, then refresh so the server component
+      // re-reads wizardState and renders the right view.
+      router.push('/app/onboarding')
+      router.refresh()
     }
 
     run()

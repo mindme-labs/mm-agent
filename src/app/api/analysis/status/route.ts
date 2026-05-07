@@ -17,9 +17,12 @@ export async function GET() {
       limit: 1,
     })
 
+    const wizardState = user.wizardState ?? 'idle'
+
     if (result.docs.length === 0) {
       return NextResponse.json({
         phase: 'none',
+        wizardState,
         total: 0,
         enhanced: 0,
         remaining: 0,
@@ -60,7 +63,10 @@ export async function GET() {
 
     return NextResponse.json({
       phase: analysis.analysisPhase ?? 'rules_done',
+      wizardState,
       analysisId: analysis.id,
+      businessModel: analysis.businessModel ?? null,
+      classificationStatus: analysis.classificationStatus ?? null,
       total,
       enhanced,
       remaining,

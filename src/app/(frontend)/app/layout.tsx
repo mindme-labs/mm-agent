@@ -1,3 +1,4 @@
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
 import { getPayload } from 'payload'
@@ -7,11 +8,60 @@ import { AppHeader } from '@/components/AppHeader'
 import { BottomNav } from '@/components/BottomNav'
 import { TrialExpiryBanner } from '@/components/TrialExpiryBanner'
 
+/**
+ * v3.3.1 wizard state machine — server-side path enforcement.
+ *
+ * Forces the user to the screen matching their `wizardState` so they can't
+ * "escape" mid-onboarding by typing /app/inbox into the URL bar. Only
+ * non-onboarded users are routed; once `hasCompletedOnboarding=true` the
+ * routing is purely role/expiry-based as before.
+ */
+function pathFromHeaders(h: Headers): string {
+  return h.get('x-pathname') ?? h.get('next-url') ?? ''
+}
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
 
   if (!user) {
     redirect('/auth/login')
+  }
+
+  // Best-effort current pathname — Next.js exposes it through middleware-set
+  // headers (or `next-url`). When we can't read it, we fall back to "no
+  // redirect" which is safe.
+  const reqHeaders = await headers()
+  const path = pathFromHeaders(reqHeaders)
+
+  if (!user.hasCompletedOnboarding) {
+    const ws = user.wizardState ?? 'idle'
+
+    // Pause -> resume screen.
+    if (ws === 'awaiting_additional_files' && !path.endsWith('/app/onboarding/resume')) {
+      redirect('/app/onboarding/resume')
+    }
+    // AI cannot_classify -> manual-pick screen.
+    if (ws === 'classification_refused' && !path.endsWith('/app/onboarding/refused')) {
+      redirect('/app/onboarding/refused')
+    }
+    // Completed wizard but flag not yet flipped (race during finalize) -> let
+    // /app/onboarding/page.tsx handle the final redirect; nothing to do here.
+
+    // Active states: the page-level component is responsible for rendering
+    // the right view. We just block access to non-onboarding paths.
+    const activeStates = new Set([
+      'idle',
+      'uploading',
+      'recognizing',
+      'extracting',
+      'classifying',
+      'awaiting_confirmation',
+      'analyzing',
+      'enhancing',
+    ])
+    if (activeStates.has(ws) && !path.startsWith('/app/onboarding')) {
+      redirect('/app/onboarding')
+    }
   }
 
   const isExpired = user.mode === 'expired' || (

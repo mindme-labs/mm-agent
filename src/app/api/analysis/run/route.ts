@@ -195,6 +195,16 @@ export async function POST() {
       }),
     )
 
+    // v3.3.1 — advance the wizard to 'enhancing' so the polling UI swaps to
+    // the AI-enhance progress display. If there's nothing to enhance, the
+    // /api/onboarding/complete call from AnalyzingProgress will jump straight
+    // to 'completed'.
+    await payload.update({
+      collection: 'users',
+      id: user.id,
+      data: { wizardState: 'enhancing' },
+    })
+
     await logEvent(user.id, 'onboarding.analysis_complete', 'analysis-results', String(analysisDoc.id), {
       total: candidates.length,
       pendingAi,
