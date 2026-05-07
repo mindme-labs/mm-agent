@@ -18,6 +18,7 @@ import config from '@payload-config'
 import { aiIdentifyFile, loadFileExtractionSettings } from '@/lib/ai/file-extractor'
 import { parseOSVFileWithHints } from '@/lib/parser/lenient-parser'
 import { logEvent } from '@/lib/logger'
+import { updateFunnelEvent } from '@/lib/funnel/update-event'
 import type { AIRecognitionLog, UploadedFileParsedData } from '@/types'
 
 export async function POST(request: NextRequest) {
@@ -75,6 +76,9 @@ export async function POST(request: NextRequest) {
         failed: 0,
       })
     }
+
+    // v3.3.1 — funnel: mark recognition reached on first run.
+    await updateFunnelEvent(user.id, { reachedRecognition: true })
 
     const outcomes = await Promise.all(
       pending.docs.map((doc) => recognizeOne(doc, user.id, payload)),

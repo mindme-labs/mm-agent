@@ -5,6 +5,7 @@ import config from '@payload-config'
 import { identifyFile, parseOSVFile } from '@/lib/parser/osv-parser'
 import { loadFileExtractionSettings } from '@/lib/ai/file-extractor'
 import { logEvent } from '@/lib/logger'
+import { updateFunnelEvent } from '@/lib/funnel/update-event'
 import type { ParsedAccountData, UploadedFileParsedData } from '@/types'
 
 const MAX_FILES = 10
@@ -99,6 +100,61 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // v3.3.1 — funnel: mark upload reached + accumulate uploaded accounts.
+    // We snapshot the requirements arrays from global-settings to compute
+    // missingRequiredAccounts/missingRecommendedAccounts; the helper unions
+    // accounts across multiple upload calls so the totals are stable.
+    const settings = await payload.findGlobal({ slug: 'global-settings' })
+    const required = unwrapAccountList(settings.requiredAccountCodes)
+    const recommended = unwrapAccountList(settings.recommendedAccountCodes)
+    const newAccountsThisCall = uploaded
+      .map((u) => u.accountCode)
+      .filter((c): c is string => typeof c === 'string' && c.length > 0)
+
+    // Re-read after the helper merges to compute the complete-set flags.
+    await updateFunnelEvent(user.id, {
+      reachedUpload: true,
+      uploadStartedAt: new Date().toISOString(),
+      filesUploaded: uploaded.filter((u) => u.status !== 'error').length,
+      uploadedAccounts: newAccountsThisCall,
+    })
+
+    // Compute completeness using the union we just merged. Uses a fresh
+    // read to avoid re-implementing union math here.
+    const fresh = await payload.find({
+      collection: 'onboarding-funnel-events',
+      where: {
+        owner: { equals: user.id },
+        outcome: { equals: 'in_progress' },
+      },
+      limit: 1,
+      sort: '-createdAt',
+    })
+    const known = Array.isArray(fresh.docs[0]?.uploadedAccounts)
+      ? (fresh.docs[0]!.uploadedAccounts as string[])
+      : []
+    const missingRequired = required.filter((c) => !known.includes(c))
+    const missingRecommended = recommended.filter((c) => !known.includes(c))
+
+    const followUp: Parameters<typeof updateFunnelEvent>[1] = {
+      missingRequiredAccounts: missingRequired,
+      missingRecommendedAccounts: missingRecommended,
+    }
+    if (missingRequired.length === 0) {
+      followUp.reachedMinimumSet = true
+      followUp.minimumSetCompletedAt = new Date().toISOString()
+    }
+    if (missingRecommended.length === 0) {
+      followUp.reachedRecommendedSet = true
+      followUp.recommendedSetCompletedAt = new Date().toISOString()
+    }
+    await updateFunnelEvent(user.id, followUp)
+    if (missingRequired.length === 0) {
+      await logEvent(user.id, 'onboarding.minimum_set_complete', undefined, undefined, {
+        accounts: known,
+      })
+    }
+
     return NextResponse.json({
       ok: true,
       files: uploaded,
@@ -116,6 +172,18 @@ interface DeterministicParseResult {
   identified: { accountCode: string; period: string } | null
   parsed: ParsedAccountData | null
   error: string | null
+}
+
+function unwrapAccountList(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const out: string[] = []
+  for (const v of value) {
+    if (typeof v === 'string') out.push(v)
+    else if (v && typeof v === 'object' && typeof (v as { code?: unknown }).code === 'string') {
+      out.push((v as { code: string }).code)
+    }
+  }
+  return out
 }
 
 function attemptDeterministicParse(content: string): DeterministicParseResult {

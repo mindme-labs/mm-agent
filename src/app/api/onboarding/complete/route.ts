@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { logEvent } from '@/lib/logger'
+import { computeDurations } from '@/lib/funnel/compute-durations'
 
 export async function POST() {
   try {
@@ -26,6 +27,35 @@ export async function POST() {
     await logEvent(user.id, 'onboarding.complete', undefined, undefined, {
       mode: user.mode,
     })
+
+    // v3.3.1 — funnel: terminal transition + duration snapshot.
+    // Done inline (not via updateFunnelEvent) because we need the final
+    // record to compute durations and we want a single atomic write.
+    try {
+      const fresh = await payload.find({
+        collection: 'onboarding-funnel-events',
+        where: {
+          owner: { equals: user.id },
+          outcome: { equals: 'in_progress' },
+        },
+        sort: '-createdAt',
+        limit: 1,
+      })
+      const record = fresh.docs[0]
+      if (record) {
+        const durations = computeDurations(record)
+        await payload.update({
+          collection: 'onboarding-funnel-events',
+          id: record.id,
+          data: {
+            outcome: 'completed',
+            ...durations,
+          },
+        })
+      }
+    } catch (err) {
+      console.error('[funnel] finalize on complete failed:', err)
+    }
 
     return NextResponse.json({ ok: true })
   } catch (err) {

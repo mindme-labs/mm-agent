@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { ALL_BUSINESS_MODELS, type BusinessModel } from '@/lib/classification/matrix'
 import { logEvent } from '@/lib/logger'
+import { updateFunnelEvent } from '@/lib/funnel/update-event'
 import type { AnalysisResult } from '@/payload-types'
 
 /**
@@ -92,6 +93,11 @@ export async function PATCH(request: NextRequest) {
         from: 'awaiting_confirmation',
         choice,
       })
+      // v3.3.1 — funnel: append fork choice + bump pause counter.
+      await updateFunnelEvent(user.id, {
+        forkChoices: [{ choice, attempt: draft.classificationAttempts ?? 1, timestamp: new Date().toISOString() }],
+        pauseCount: 1,
+      })
       return NextResponse.json({
         ok: true,
         status: 'paused',
@@ -110,6 +116,11 @@ export async function PATCH(request: NextRequest) {
       await logEvent(user.id, 'classification.user_choice', 'analysis-results', String(draft.id), {
         choice,
         currentModel: draft.businessModel,
+      })
+      // v3.3.1 — funnel: append fork choice (no pause counter — they're
+      // pivoting back into the same session, not pausing).
+      await updateFunnelEvent(user.id, {
+        forkChoices: [{ choice, attempt: draft.classificationAttempts ?? 1, timestamp: new Date().toISOString() }],
       })
       return NextResponse.json({
         ok: true,
@@ -187,6 +198,24 @@ export async function PATCH(request: NextRequest) {
       isOverride: isActualOverride,
       classificationStatus: nextClassificationStatus,
     })
+
+    // v3.3.1 — funnel: confirmation done. Snapshot final outcome.
+    const confirmationPatch: Parameters<typeof updateFunnelEvent>[1] = {
+      reachedConfirmation: true,
+      confirmationCompletedAt: new Date().toISOString(),
+      finalModel: model,
+      classificationFinalStatus: nextClassificationStatus,
+      userOverridden: isActualOverride === true || draft.businessModelUserOverridden === true,
+    }
+    if (typeof draft.businessModelConfidence === 'number') {
+      confirmationPatch.finalConfidence = draft.businessModelConfidence
+    }
+    if (choice === 'continue_degraded') {
+      confirmationPatch.forkChoices = [
+        { choice, attempt: draft.classificationAttempts ?? 1, timestamp: new Date().toISOString() },
+      ]
+    }
+    await updateFunnelEvent(user.id, confirmationPatch)
 
     return NextResponse.json({
       ok: true,

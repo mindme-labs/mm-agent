@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { runClassification, getMaxAttempts } from '@/lib/classification/service'
 import { logEvent } from '@/lib/logger'
+import { updateFunnelEvent } from '@/lib/funnel/update-event'
 
 /**
  * POST /api/analysis/classify
@@ -77,7 +78,39 @@ export async function POST() {
       previousState: wizardState,
     })
 
+    // v3.3.1 — funnel: mark classification reached + start time.
+    await updateFunnelEvent(user.id, {
+      reachedClassification: true,
+      classificationStartedAt: new Date().toISOString(),
+    })
+
     const outcome = await runClassification(user.id)
+
+    // v3.3.1 — funnel: classification done. Increment attempts, append the
+    // requested-accounts row, snapshot first AI guess on the very first
+    // attempt, set hasDataQualityWarning if the AI flagged it.
+    const isFirstAttempt = (attempts ?? 0) === 0
+    const requested = outcome.result.requestedAccounts ?? []
+    const followUp: Parameters<typeof updateFunnelEvent>[1] = {
+      classificationCompletedAt: new Date().toISOString(),
+      classificationAttempts: 1,
+      hasDataQualityWarning: !!outcome.result.dataQualityWarning,
+      requestedAccountsHistory: [requested],
+    }
+    if (isFirstAttempt && outcome.result.model) {
+      followUp.initialAiModel = outcome.result.model
+    }
+    if (isFirstAttempt && typeof outcome.result.confidence === 'number') {
+      followUp.initialAiConfidence = outcome.result.confidence
+    }
+    await updateFunnelEvent(user.id, followUp)
+
+    if (requested.length > 0) {
+      await logEvent(user.id, 'classification.additional_data_requested', undefined, undefined, {
+        accounts: requested,
+        attempt: outcome.attempts,
+      })
+    }
 
     return NextResponse.json({
       ok: true,

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { logEvent } from '@/lib/logger'
+import { updateFunnelEvent } from '@/lib/funnel/update-event'
 
 /**
  * POST /api/analysis/refuse-classification
@@ -35,6 +36,11 @@ export async function POST() {
       email: user.email,
       supportContact: supportContact || null,
     })
+
+    // v3.3.1 — funnel: terminal outcome. Helper preserves first-seen
+    // timestamps but `outcome` is replace-mode; this transitions the
+    // current in_progress row to refused.
+    await updateFunnelEvent(user.id, { outcome: 'refused' })
 
     return NextResponse.json({ ok: true, supportContact })
   } catch (err) {

@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { generatePayloadToken, setAuthCookie } from '@/lib/auth'
 import { logEvent } from '@/lib/logger'
+import { updateFunnelEvent } from '@/lib/funnel/update-event'
 
 export async function POST(request: NextRequest) {
   try {
@@ -95,6 +96,13 @@ export async function POST(request: NextRequest) {
     await logEvent(user.id, 'auth.login', undefined, undefined, {
       mode: 'trial',
       isFirstLogin: true,
+    })
+
+    // v3.3.1 — open the funnel record so we can measure register-to-upload
+    // gap times. `updateFunnelEvent` is fire-and-forget — never throws.
+    await updateFunnelEvent(user.id, {
+      reachedStart: true,
+      startedAt: new Date().toISOString(),
     })
 
     return NextResponse.json({ ok: true, user: { id: user.id, email: user.email, name: user.name } })

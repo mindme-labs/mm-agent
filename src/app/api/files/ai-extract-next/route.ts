@@ -23,6 +23,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { aiExtractData, loadFileExtractionSettings } from '@/lib/ai/file-extractor'
 import { logEvent } from '@/lib/logger'
+import { updateFunnelEvent } from '@/lib/funnel/update-event'
 import type { AIFileHints, AIRecognitionLog, UploadedFileParsedData } from '@/types'
 
 export async function POST() {
@@ -54,6 +55,9 @@ export async function POST() {
     if (pending.docs.length === 0) {
       return NextResponse.json({ done: true, processed: false })
     }
+
+    // v3.3.1 — funnel: mark extraction reached on first run.
+    await updateFunnelEvent(user.id, { reachedExtraction: true })
 
     const doc = pending.docs[0]
     const stored = (doc.parsedData ?? {}) as unknown as UploadedFileParsedData

@@ -16,6 +16,7 @@ import { AIUsageLogs } from './collections/AIUsageLogs'
 import { EventLog } from './collections/EventLog'
 import { InviteCodes } from './collections/InviteCodes'
 import { AccessRequests } from './collections/AccessRequests'
+import { OnboardingFunnelEvents } from './collections/OnboardingFunnelEvents'
 import { GlobalSettings } from './globals/GlobalSettings'
 
 const filename = fileURLToPath(import.meta.url)
@@ -49,6 +50,7 @@ export default buildConfig({
     EventLog,
     InviteCodes,
     AccessRequests,
+    OnboardingFunnelEvents,
   ],
   globals: [GlobalSettings],
   editor: lexicalEditor(),

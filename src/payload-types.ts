@@ -78,6 +78,7 @@ export interface Config {
     'event-log': EventLog;
     'invite-codes': InviteCode;
     'access-requests': AccessRequest;
+    'onboarding-funnel-events': OnboardingFunnelEvent;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -96,6 +97,7 @@ export interface Config {
     'event-log': EventLogSelect<false> | EventLogSelect<true>;
     'invite-codes': InviteCodesSelect<false> | InviteCodesSelect<true>;
     'access-requests': AccessRequestsSelect<false> | AccessRequestsSelect<true>;
+    'onboarding-funnel-events': OnboardingFunnelEventsSelect<false> | OnboardingFunnelEventsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -535,6 +537,112 @@ export interface AccessRequest {
   createdAt: string;
 }
 /**
+ * Аналитический архив. Записи нельзя удалять (даже admin).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "onboarding-funnel-events".
+ */
+export interface OnboardingFunnelEvent {
+  id: string;
+  owner: string | User;
+  attemptNumber: number;
+  reachedStart?: boolean | null;
+  reachedUpload?: boolean | null;
+  reachedMinimumSet?: boolean | null;
+  reachedRecommendedSet?: boolean | null;
+  reachedRecognition?: boolean | null;
+  reachedExtraction?: boolean | null;
+  reachedClassification?: boolean | null;
+  reachedConfirmation?: boolean | null;
+  reachedAnalysis?: boolean | null;
+  startedAt?: string | null;
+  uploadStartedAt?: string | null;
+  minimumSetCompletedAt?: string | null;
+  recommendedSetCompletedAt?: string | null;
+  classificationStartedAt?: string | null;
+  classificationCompletedAt?: string | null;
+  confirmationCompletedAt?: string | null;
+  analysisCompletedAt?: string | null;
+  abandonedAt?: string | null;
+  durationToUpload?: number | null;
+  durationUpload?: number | null;
+  durationRecognition?: number | null;
+  durationExtraction?: number | null;
+  durationClassification?: number | null;
+  durationConfirmation?: number | null;
+  durationAnalysis?: number | null;
+  durationTotal?: number | null;
+  filesUploaded?: number | null;
+  /**
+   * Массив строк (кодов счетов).
+   */
+  uploadedAccounts?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  missingRequiredAccounts?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  missingRecommendedAccounts?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  classificationAttempts?: number | null;
+  classificationFinalStatus?: ('success' | 'degraded' | 'refused_manual' | 'disabled') | null;
+  initialAiModel?: string | null;
+  initialAiConfidence?: number | null;
+  finalModel?: string | null;
+  finalConfidence?: number | null;
+  userOverridden?: boolean | null;
+  hasDataQualityWarning?: boolean | null;
+  /**
+   * Массив массивов: каждая попытка классификации добавляет новый ряд.
+   */
+  requestedAccountsHistory?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Лог выборов в развилке: [{attempt, choice, timestamp}]
+   */
+  forkChoices?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  pauseCount?: number | null;
+  totalPauseDurationMs?: number | null;
+  outcome: 'in_progress' | 'completed' | 'abandoned' | 'refused';
+  recommendationsCreated?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -601,6 +709,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'access-requests';
         value: string | AccessRequest;
+      } | null)
+    | ({
+        relationTo: 'onboarding-funnel-events';
+        value: string | OnboardingFunnelEvent;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -860,6 +972,60 @@ export interface AccessRequestsSelect<T extends boolean = true> {
   status?: T;
   inviteCode?: T;
   approvedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "onboarding-funnel-events_select".
+ */
+export interface OnboardingFunnelEventsSelect<T extends boolean = true> {
+  owner?: T;
+  attemptNumber?: T;
+  reachedStart?: T;
+  reachedUpload?: T;
+  reachedMinimumSet?: T;
+  reachedRecommendedSet?: T;
+  reachedRecognition?: T;
+  reachedExtraction?: T;
+  reachedClassification?: T;
+  reachedConfirmation?: T;
+  reachedAnalysis?: T;
+  startedAt?: T;
+  uploadStartedAt?: T;
+  minimumSetCompletedAt?: T;
+  recommendedSetCompletedAt?: T;
+  classificationStartedAt?: T;
+  classificationCompletedAt?: T;
+  confirmationCompletedAt?: T;
+  analysisCompletedAt?: T;
+  abandonedAt?: T;
+  durationToUpload?: T;
+  durationUpload?: T;
+  durationRecognition?: T;
+  durationExtraction?: T;
+  durationClassification?: T;
+  durationConfirmation?: T;
+  durationAnalysis?: T;
+  durationTotal?: T;
+  filesUploaded?: T;
+  uploadedAccounts?: T;
+  missingRequiredAccounts?: T;
+  missingRecommendedAccounts?: T;
+  classificationAttempts?: T;
+  classificationFinalStatus?: T;
+  initialAiModel?: T;
+  initialAiConfidence?: T;
+  finalModel?: T;
+  finalConfidence?: T;
+  userOverridden?: T;
+  hasDataQualityWarning?: T;
+  requestedAccountsHistory?: T;
+  forkChoices?: T;
+  pauseCount?: T;
+  totalPauseDurationMs?: T;
+  outcome?: T;
+  recommendationsCreated?: T;
   updatedAt?: T;
   createdAt?: T;
 }

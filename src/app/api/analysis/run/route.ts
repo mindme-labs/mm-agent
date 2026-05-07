@@ -11,6 +11,7 @@ import { getAllowedRules } from '@/lib/classification/rule-allowlist'
 import type { BusinessModel } from '@/lib/classification/matrix'
 import { runClassification } from '@/lib/classification/service'
 import { logEvent } from '@/lib/logger'
+import { updateFunnelEvent } from '@/lib/funnel/update-event'
 import type { ParsedAccountData, UploadedFileParsedData } from '@/types'
 
 export async function POST() {
@@ -203,6 +204,15 @@ export async function POST() {
       collection: 'users',
       id: user.id,
       data: { wizardState: 'enhancing' },
+    })
+
+    // v3.3.1 — funnel: rules engine done. Don't compute durations yet —
+    // /api/onboarding/complete owns the final transition to outcome=completed
+    // and the duration snapshot.
+    await updateFunnelEvent(user.id, {
+      reachedAnalysis: true,
+      analysisCompletedAt: new Date().toISOString(),
+      recommendationsCreated: candidates.length,
     })
 
     await logEvent(user.id, 'onboarding.analysis_complete', 'analysis-results', String(analysisDoc.id), {
