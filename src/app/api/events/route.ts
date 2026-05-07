@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { logEvent } from '@/lib/logger'
 
+// Events that the browser is allowed to log directly via this endpoint.
+// Server-side events go through `logEvent()` with no whitelist.
 const ALLOWED_EVENTS = [
   'recommendation.text_copied',
   'recommendation.viewed',
   'page.view',
+  // v3.3.1 — wizard transitions observed only on the client side.
+  'wizard.resumed',
 ]
 
 export async function POST(request: NextRequest) {
