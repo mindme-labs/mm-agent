@@ -119,6 +119,7 @@ export const AnalysisResults: CollectionConfig = {
       label: 'Фаза анализа',
       defaultValue: 'rules_done',
       options: [
+        { label: 'Классификация (черновик)', value: 'classifying' },
         { label: 'Правила выполнены', value: 'rules_done' },
         { label: 'AI-аудит запущен', value: 'ai_pending' },
         { label: 'AI-аудит завершён', value: 'ai_complete' },

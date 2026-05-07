@@ -358,7 +358,7 @@ export interface AnalysisResult {
     | boolean
     | null;
   aiAuditSummary?: string | null;
-  analysisPhase?: ('rules_done' | 'ai_pending' | 'ai_complete' | 'ai_error') | null;
+  analysisPhase?: ('classifying' | 'rules_done' | 'ai_pending' | 'ai_complete' | 'ai_error') | null;
   isDemo?: boolean | null;
   businessModel?:
     | (
@@ -461,14 +461,35 @@ export interface EventLog {
     | 'onboarding.analysis_complete'
     | 'onboarding.complete'
     | 'onboarding.file_upload'
+    | 'onboarding.minimum_set_complete'
     | 'recommendation.status_changed'
     | 'recommendation.feedback'
     | 'recommendation.text_copied'
     | 'recommendation.viewed'
+    | 'recommendation.due_date_changed'
+    | 'task.overdue'
     | 'ai.request'
     | 'ai.response'
     | 'ai.error'
     | 'ai.fallback'
+    | 'classification.started'
+    | 'classification.completed'
+    | 'classification.confirmed'
+    | 'classification.user_override'
+    | 'classification.additional_data_requested'
+    | 'classification.user_choice'
+    | 'classification.degraded_accepted'
+    | 'classification.refused_manual_override'
+    | 'classification.refused_contact_requested'
+    | 'wizard.state_changed'
+    | 'wizard.paused'
+    | 'wizard.resumed'
+    | 'wizard.abandoned'
+    | 'file.recognition_started'
+    | 'file.recognition_completed'
+    | 'file.extraction_started'
+    | 'file.extraction_completed'
+    | 'file.parse_error'
     | 'page.view';
   entityType?: string | null;
   entityId?: string | null;

@@ -9,6 +9,7 @@ import { fallbackForCandidate } from '@/lib/rules/fallback-templates'
 import { loadAnalyzerSettings } from '@/lib/ai/rule-analyzer'
 import { getAllowedRules } from '@/lib/classification/rule-allowlist'
 import type { BusinessModel } from '@/lib/classification/matrix'
+import { runClassification } from '@/lib/classification/service'
 import { logEvent } from '@/lib/logger'
 import type { ParsedAccountData, UploadedFileParsedData } from '@/types'
 
@@ -69,18 +70,38 @@ export async function POST() {
       }, { status: 400 })
     }
 
-    // v3.3.1 — read businessModel from the most recent draft analysis-results
-    // (created by /api/analysis/classify in iter-19). When no draft exists,
-    // fall back to safe default 'trading' which means all 9 rules run — same
-    // behavior as v3.2.
-    const draftResult = await payload.find({
-      collection: 'analysis-results',
-      where: { owner: { equals: user.id } },
-      sort: '-createdAt',
-      limit: 1,
-    })
+    // v3.3.1 — fetch the user's most recent classification draft (created by
+    // /api/analysis/classify). If no record carries businessModel yet, run
+    // classification synchronously as a fallback so we never hit rules with
+    // no model context. `runClassification` is always-resolves (safeFallback
+    // on AI failure) so this can't hang or throw.
+    let draftDoc = (
+      await payload.find({
+        collection: 'analysis-results',
+        where: { owner: { equals: user.id } },
+        sort: '-createdAt',
+        limit: 1,
+      })
+    ).docs[0]
+
+    if (!draftDoc?.businessModel) {
+      console.log('[Analysis] no classification draft found; running fallback classification')
+      try {
+        const outcome = await runClassification(user.id)
+        draftDoc = (
+          await payload.find({
+            collection: 'analysis-results',
+            where: { id: { equals: outcome.analysisId } },
+            limit: 1,
+          })
+        ).docs[0]
+      } catch (err) {
+        console.error('[Analysis] fallback classification failed; defaulting to trading', err)
+      }
+    }
+
     const businessModel: BusinessModel =
-      (draftResult.docs[0]?.businessModel as BusinessModel | undefined) ?? 'trading'
+      (draftDoc?.businessModel as BusinessModel | undefined) ?? 'trading'
     const allowedRules = getAllowedRules(businessModel)
     console.log(
       `[Analysis] businessModel=${businessModel}, applying ${allowedRules.size} of 9 rules`,
@@ -90,29 +111,43 @@ export async function POST() {
     const metrics = calculateMetrics(parsedData)
     const settings = await loadAnalyzerSettings()
 
-    const analysisDoc = await payload.create({
-      collection: 'analysis-results',
-      data: {
-        owner: user.id,
-        period: metrics.period,
-        revenue: metrics.revenue,
-        cogs: metrics.cogs,
-        grossProfit: metrics.grossProfit,
-        grossMargin: metrics.grossMargin,
-        accountsReceivable: metrics.accountsReceivable,
-        accountsPayable: metrics.accountsPayable,
-        inventory: metrics.inventory,
-        shippedGoods: metrics.shippedGoods,
-        arTurnoverDays: metrics.arTurnoverDays,
-        apTurnoverDays: metrics.apTurnoverDays,
-        inventoryTurnoverDays: metrics.inventoryTurnoverDays,
-        healthIndex: metrics.healthIndex,
-        topDebtors: metrics.topDebtors,
-        topCreditors: metrics.topCreditors,
-        isDemo: false,
-        analysisPhase: 'rules_done',
-      },
-    })
+    // If a classification draft exists for this user (analysisPhase==='classifying'),
+    // upgrade it in place rather than creating a second record. Otherwise create
+    // a fresh analysis-results — preserves the v3.2 behavior for users who
+    // bypass classification entirely (e.g., aiClassificationEnabled was true at
+    // first, then turned off mid-flow).
+    const isUpgradingDraft = draftDoc?.analysisPhase === 'classifying'
+    const fullData = {
+      owner: user.id,
+      period: metrics.period,
+      revenue: metrics.revenue,
+      cogs: metrics.cogs,
+      grossProfit: metrics.grossProfit,
+      grossMargin: metrics.grossMargin,
+      accountsReceivable: metrics.accountsReceivable,
+      accountsPayable: metrics.accountsPayable,
+      inventory: metrics.inventory,
+      shippedGoods: metrics.shippedGoods,
+      arTurnoverDays: metrics.arTurnoverDays,
+      apTurnoverDays: metrics.apTurnoverDays,
+      inventoryTurnoverDays: metrics.inventoryTurnoverDays,
+      healthIndex: metrics.healthIndex,
+      topDebtors: metrics.topDebtors,
+      topCreditors: metrics.topCreditors,
+      isDemo: false,
+      analysisPhase: 'rules_done' as const,
+    }
+
+    const analysisDoc = isUpgradingDraft
+      ? await payload.update({
+          collection: 'analysis-results',
+          id: draftDoc!.id,
+          data: fullData,
+        })
+      : await payload.create({
+          collection: 'analysis-results',
+          data: fullData,
+        })
 
     let pendingAi = 0
     let prefilled = 0
