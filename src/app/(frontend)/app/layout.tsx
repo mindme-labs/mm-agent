@@ -119,24 +119,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     )
   }
 
-  if (isExpired) {
-    return (
-      <div className="min-h-dvh" style={{ background: 'var(--mm-bg)' }}>
-        <div className="mx-auto max-w-[920px] px-4 py-8 lg:px-7">
-          {children}
-        </div>
-      </div>
-    )
-  }
-
+  // Past this point: full app shell. Used to render a stripped bare layout
+  // for `isExpired`, but that left expired users on /app/inbox without any
+  // way to log out, switch tabs, or even see why their access was limited.
+  // Now expired users get the same chrome as anyone else, plus a persistent
+  // banner pointing them at /app/upgrade.
   return (
     <div className="min-h-dvh" style={{ background: 'var(--mm-bg)' }}>
       <Sidebar userName={user.name || user.email} newCount={newCount} overdueCount={overdueCount} />
       <AppHeader userName={user.name || user.email} />
       <div className="lg:pl-[260px]">
         <main className="mx-auto max-w-[920px] px-4 pb-20 pt-4 lg:px-7 lg:pb-6">
-          {trialDaysLeft != null && trialDaysLeft <= 3 && trialDaysLeft > 0 && (
-            <TrialExpiryBanner daysLeft={trialDaysLeft} />
+          {isExpired ? (
+            <TrialExpiryBanner expired />
+          ) : (
+            trialDaysLeft != null &&
+            trialDaysLeft <= 3 &&
+            trialDaysLeft > 0 && <TrialExpiryBanner daysLeft={trialDaysLeft} />
           )}
           {children}
         </main>
