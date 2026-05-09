@@ -161,9 +161,44 @@ export async function clearDemoForUser(userId: string): Promise<void> {
     where: { owner: { equals: userId } },
   })
 
+  // v3.3.1: also reset the wizard machine. Without these, the user re-enters
+  // /app/onboarding with a stale wizardState='completed' / non-zero attempts
+  // counter, and the next /api/analysis/classify call 409s with
+  // "cannot classify from wizardState='completed'".
   await payload.update({
     collection: 'users',
     id: userId,
-    data: { hasCompletedOnboarding: false },
+    data: {
+      hasCompletedOnboarding: false,
+      wizardState: 'idle',
+      currentClassificationAttempts: 0,
+    },
   })
+
+  // Mark any in-progress funnel record for this user as 'abandoned'. The new
+  // onboarding will start a fresh attemptNumber-incremented row via
+  // updateFunnelEvent. We don't want the old in_progress row to be merged
+  // into — that would silently mix metrics from two distinct attempts.
+  try {
+    const stale = await payload.find({
+      collection: 'onboarding-funnel-events',
+      where: {
+        owner: { equals: userId },
+        outcome: { equals: 'in_progress' },
+      },
+      limit: 10,
+    })
+    for (const record of stale.docs) {
+      await payload.update({
+        collection: 'onboarding-funnel-events',
+        id: record.id,
+        data: {
+          outcome: 'abandoned',
+          abandonedAt: new Date().toISOString(),
+        },
+      })
+    }
+  } catch (err) {
+    console.error('[demo] could not abandon stale funnel records:', err)
+  }
 }

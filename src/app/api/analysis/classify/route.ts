@@ -40,7 +40,29 @@ export async function POST() {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
-    const wizardState = user.wizardState ?? 'idle'
+    let wizardState = user.wizardState ?? 'idle'
+
+    // Self-heal: if the user is mid-onboarding (hasCompletedOnboarding=false)
+    // but their wizardState is the terminal 'completed' value, the state
+    // machine is desynced (typically from a /api/dev/reset-onboarding before
+    // we fixed clearDemoForUser). Coerce back to 'idle' so the user can
+    // restart instead of getting stuck on a 409 they can't escape.
+    if (wizardState === 'completed' && !user.hasCompletedOnboarding) {
+      const payload = await getPayload({ config })
+      await payload.update({
+        collection: 'users',
+        id: user.id,
+        data: {
+          wizardState: 'idle',
+          currentClassificationAttempts: 0,
+        },
+      })
+      wizardState = 'idle'
+      console.warn(
+        `[Classify] auto-healed wizardState completed -> idle for user ${user.id} (hasCompletedOnboarding=false)`,
+      )
+    }
+
     if (!ALLOWED_ENTRY_STATES.has(wizardState)) {
       return NextResponse.json(
         {

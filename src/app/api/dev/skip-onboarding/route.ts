@@ -8,10 +8,15 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'not authenticated' }, { status: 401 })
 
   const payload = await getPayload({ config })
+  // Mirror /api/onboarding/complete — flip both fields so the layout's
+  // wizardState routing treats this as a completed onboarding immediately.
   const updated = await payload.update({
     collection: 'users',
     id: user.id,
-    data: { hasCompletedOnboarding: true },
+    data: {
+      hasCompletedOnboarding: true,
+      wizardState: 'completed',
+    },
   })
 
   return NextResponse.json({
