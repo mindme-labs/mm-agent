@@ -3,7 +3,9 @@ import { sweepAbandoned } from '@/lib/funnel/abandoned-sweep'
 
 /**
  * Vercel-scheduled function — flips long-idle onboarding funnel records to
- * outcome='abandoned'. Runs hourly per `vercel.json`.
+ * outcome='abandoned'. Runs once a day per `vercel.json` (Hobby plan caps
+ * crons at a daily cadence; a single daily pass with the 24h idle cutoff
+ * is equivalent in behavior).
  *
  * Auth: requires `Authorization: Bearer ${CRON_SECRET}`. Vercel
  * automatically attaches this header for cron-triggered invocations
